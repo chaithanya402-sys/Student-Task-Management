@@ -1,0 +1,593 @@
+// Initial data mirroring the exact statistics and items from the StudyDeck reference screenshots
+
+export const initialUser = {
+  fullName: "Alex Kumar",
+  initials: "AK",
+  programme: "B.Tech",
+  year: "2",
+  email: "alex.kumar@college.edu",
+  studentId: "SD-2024-8842",
+  department: "Computer Science & Engineering",
+  institution: "Apex Institute of Technology",
+  avatarUrl: null,
+  role: "student"
+};
+
+export const initialAssignments = [
+  {
+    id: "asg-1",
+    course: "English Lit",
+    title: "Poetry Analysis",
+    dueDate: "2026-10-12",
+    displayDate: "12 Oct 2026",
+    status: "Overdue",
+    faculty: "Prof. Eleanor Vance",
+    grade: null,
+    totalPoints: 100,
+    description: "Analyze stylistic and thematic elements in Romantic era poetry with a focus on William Wordsworth and John Keats.",
+    submittedFile: null,
+    isLate: true
+  },
+  {
+    id: "asg-2",
+    course: "Biology 101",
+    title: "Cell Structure Lab Report",
+    dueDate: "2026-10-17",
+    displayDate: "17 Oct 2026",
+    status: "Not Started",
+    faculty: "Dr. Marcus Brody",
+    grade: null,
+    totalPoints: 100,
+    description: "Submit microscopy findings, diagram labeling, and organelle comparison worksheet completed during Week 4 lab.",
+    submittedFile: null,
+    isLate: false
+  },
+  {
+    id: "asg-3",
+    course: "Arithmetic 2",
+    title: "Problem Set 7.c",
+    dueDate: "2026-10-18",
+    displayDate: "18 Oct 2026",
+    status: "Draft",
+    faculty: "Prof. Alan Reyes",
+    grade: null,
+    totalPoints: 50,
+    description: "Complete exercises 1 through 15 on polynomial factorization and complex fraction simplification.",
+    submittedFile: "problem_set_7c_draft.pdf",
+    isLate: false
+  },
+  {
+    id: "asg-4",
+    course: "History 201",
+    title: "Industrial Revolution Essay",
+    dueDate: "2026-10-20",
+    displayDate: "20 Oct 2026",
+    status: "Revision Required",
+    faculty: "Dr. Sarah Jenkins",
+    grade: "76%",
+    totalPoints: 100,
+    description: "1,500-word critical evaluation on the socio-economic impacts of steam power adoption in 19th-century Britain.",
+    submittedFile: "industrial_revolution_v1.docx",
+    instructorFeedback: "Strong thesis, but please expand primary source citations in Section 3 and re-submit.",
+    isLate: false
+  },
+  {
+    id: "asg-5",
+    course: "Chemistry 101",
+    title: "Titration Worksheet",
+    dueDate: "2026-10-22",
+    displayDate: "22 Oct 2026",
+    status: "Not Started",
+    faculty: "Dr. Robert Vance",
+    grade: null,
+    totalPoints: 50,
+    description: "Calculations on acid-base equilibrium and titration curves based on simulated phenolphthalein indicators.",
+    submittedFile: null,
+    isLate: false
+  },
+  {
+    id: "asg-6",
+    course: "Arithmetic 2",
+    title: "Quiz Prep Set",
+    dueDate: "2026-10-24",
+    displayDate: "24 Oct 2026",
+    status: "Submitted",
+    faculty: "Prof. Alan Reyes",
+    grade: "88%",
+    totalPoints: 50,
+    description: "Preparatory question bank covering matrix multiplication, determinants, and Gaussian elimination.",
+    submittedFile: "quiz_prep_set_final.pdf",
+    submittedDate: "2026-10-13",
+    isLate: false
+  },
+  {
+    id: "asg-7",
+    course: "Biology 101",
+    title: "Genetics Problem Set",
+    dueDate: "2026-10-05",
+    displayDate: "05 Oct 2026",
+    status: "Submitted",
+    faculty: "Dr. Marcus Brody",
+    grade: "92%",
+    totalPoints: 100,
+    description: "Mendelian genetics, Punnett squares, and pedigree chart interpretations.",
+    submittedFile: "genetics_ps.pdf",
+    submittedDate: "2026-10-04",
+    isLate: false
+  },
+  {
+    id: "asg-8",
+    course: "History 201",
+    title: "Renaissance Art Presentation Slides",
+    dueDate: "2026-09-28",
+    displayDate: "28 Sep 2026",
+    status: "Submitted",
+    faculty: "Dr. Sarah Jenkins",
+    grade: "82%",
+    totalPoints: 100,
+    description: "Slide deck comparing Florence vs Venetian artistic movements.",
+    submittedFile: "renaissance_deck.pptx",
+    submittedDate: "2026-09-27",
+    isLate: false
+  },
+  {
+    id: "asg-9",
+    course: "Biology 101",
+    title: "Photosynthesis Experiment Log",
+    dueDate: "2026-09-20",
+    displayDate: "20 Sep 2026",
+    status: "Submitted",
+    faculty: "Dr. Marcus Brody",
+    grade: "88%",
+    totalPoints: 100,
+    description: "Spectrophotometer readings and chlorophyll absorbance graphs.",
+    submittedFile: "experiment_log_wk2.pdf",
+    submittedDate: "2026-09-19",
+    isLate: false
+  },
+  {
+    id: "asg-10",
+    course: "Arithmetic 2",
+    title: "Linear Systems Diagnostic",
+    dueDate: "2026-09-15",
+    displayDate: "15 Sep 2026",
+    status: "Submitted",
+    faculty: "Prof. Alan Reyes",
+    grade: "84%",
+    totalPoints: 100,
+    description: "Assessment on solving 3-variable linear equation systems.",
+    submittedFile: "diagnostic_test.pdf",
+    submittedDate: "2026-09-15",
+    isLate: false
+  },
+  {
+    id: "asg-11",
+    course: "English Lit",
+    title: "Hamlet soliloquy close reading",
+    dueDate: "2026-09-10",
+    displayDate: "10 Sep 2026",
+    status: "Submitted",
+    faculty: "Prof. Eleanor Vance",
+    grade: "85%",
+    totalPoints: 100,
+    description: "Critical commentary on Act 3 Scene 1.",
+    submittedFile: "hamlet_reading.docx",
+    submittedDate: "2026-09-09",
+    isLate: false
+  },
+  {
+    id: "asg-12",
+    course: "Chemistry 101",
+    title: "Periodic Trends Data Sheet",
+    dueDate: "2026-09-05",
+    displayDate: "05 Sep 2026",
+    status: "Submitted",
+    faculty: "Dr. Robert Vance",
+    grade: "90%",
+    totalPoints: 50,
+    description: "Electronegativity, ionization energy, and atomic radii comparisons.",
+    submittedFile: "periodic_trends.pdf",
+    submittedDate: "2026-09-04",
+    isLate: false
+  },
+  {
+    id: "asg-13",
+    course: "Biology 101",
+    title: "Mitosis Microscopy Sketchbook",
+    dueDate: "2026-08-30",
+    displayDate: "30 Aug 2026",
+    status: "Submitted",
+    faculty: "Dr. Marcus Brody",
+    grade: "94%",
+    totalPoints: 50,
+    description: "Hand-sketched onion root tip cell phases.",
+    submittedFile: "mitosis_sketches.pdf",
+    submittedDate: "2026-08-29",
+    isLate: false
+  },
+  {
+    id: "asg-14",
+    course: "Arithmetic 2",
+    title: "Vector Geometry Assignment",
+    dueDate: "2026-08-25",
+    displayDate: "25 Aug 2026",
+    status: "Submitted",
+    faculty: "Prof. Alan Reyes",
+    grade: "80%",
+    totalPoints: 100,
+    description: "Dot products, cross products, and 3D plane equations.",
+    submittedFile: "vectors_hw.pdf",
+    submittedDate: "2026-08-25",
+    isLate: false
+  },
+  {
+    id: "asg-15",
+    course: "History 201",
+    title: "Enlightenment Thinkers Comparative Matrix",
+    dueDate: "2026-08-20",
+    displayDate: "20 Aug 2026",
+    status: "Submitted",
+    faculty: "Dr. Sarah Jenkins",
+    grade: "78%",
+    totalPoints: 100,
+    description: "Comparing Locke, Rousseau, and Hobbes on the social contract.",
+    submittedFile: "thinkers_matrix.pdf",
+    submittedDate: "2026-08-19",
+    isLate: false
+  },
+  {
+    id: "asg-16",
+    course: "English Lit",
+    title: "Victorian Era Poetry Comparison",
+    dueDate: "2026-08-15",
+    displayDate: "15 Aug 2026",
+    status: "Submitted",
+    faculty: "Prof. Eleanor Vance",
+    grade: "83%",
+    totalPoints: 100,
+    description: "Comparative study of Tennyson and Browning.",
+    submittedFile: "victorian_poetry.docx",
+    submittedDate: "2026-08-14",
+    isLate: false
+  },
+  {
+    id: "asg-17",
+    course: "Chemistry 101",
+    title: "Stoichiometry Practice Set",
+    dueDate: "2026-08-10",
+    displayDate: "10 Aug 2026",
+    status: "Submitted",
+    faculty: "Dr. Robert Vance",
+    grade: "86%",
+    totalPoints: 100,
+    description: "Molar mass, limiting reagents, and percent yield calculations.",
+    submittedFile: "stoichiometry.pdf",
+    submittedDate: "2026-08-09",
+    isLate: false
+  },
+  {
+    id: "asg-18",
+    course: "Biology 101",
+    title: "Cellular Respiration Quiz Review",
+    dueDate: "2026-08-05",
+    displayDate: "05 Aug 2026",
+    status: "Submitted",
+    faculty: "Dr. Marcus Brody",
+    grade: "89%",
+    totalPoints: 50,
+    description: "Glycolysis, Krebs cycle, and oxidative phosphorylation pathway.",
+    submittedFile: "respiration_review.pdf",
+    submittedDate: "2026-08-04",
+    isLate: false
+  },
+  {
+    id: "asg-19",
+    course: "Arithmetic 2",
+    title: "Trigonometric Identities Worksheet",
+    dueDate: "2026-08-01",
+    displayDate: "01 Aug 2026",
+    status: "Submitted",
+    faculty: "Prof. Alan Reyes",
+    grade: "82%",
+    totalPoints: 50,
+    description: "Proof of double-angle and half-angle trigonometric formulas.",
+    submittedFile: "trig_identities.pdf",
+    submittedDate: "2026-07-31",
+    isLate: false
+  },
+  {
+    id: "asg-20",
+    course: "History 201",
+    title: "Feudal Systems Analysis",
+    dueDate: "2026-07-25",
+    displayDate: "25 Jul 2026",
+    status: "Submitted",
+    faculty: "Dr. Sarah Jenkins",
+    grade: "81%",
+    totalPoints: 100,
+    description: "Economic and social structure of medieval European manorialism.",
+    submittedFile: "feudal_systems.docx",
+    submittedDate: "2026-07-24",
+    isLate: false
+  }
+];
+
+// Tasks matching Total: 40 (28 personal, 12 assigned)
+// 12 Pending (5 due within 7 days), 24 Completed (60%), 4 Overdue
+export const initialTasks = [
+  // 4 Overdue tasks
+  {
+    id: "task-1",
+    title: "Poetry Analysis Final Draft",
+    course: "English Lit",
+    dueDate: "2026-10-12",
+    status: "overdue",
+    priority: "high",
+    isAssigned: true,
+    description: "Complete and format final draft of Romantic poetry essay."
+  },
+  {
+    id: "task-2",
+    title: "Review Biology Week 4 Slides",
+    course: "Biology 101",
+    dueDate: "2026-10-11",
+    status: "overdue",
+    priority: "medium",
+    isAssigned: false,
+    description: "Go over organelle slides and self-test questions."
+  },
+  {
+    id: "task-3",
+    title: "Arithmetic Practice Problem Set 6",
+    course: "Arithmetic 2",
+    dueDate: "2026-10-10",
+    status: "overdue",
+    priority: "high",
+    isAssigned: true,
+    description: "Finish remaining exercises on algebraic systems."
+  },
+  {
+    id: "task-4",
+    title: "Library Book Return & History Readings",
+    course: "History 201",
+    dueDate: "2026-10-09",
+    status: "overdue",
+    priority: "low",
+    isAssigned: false,
+    description: "Return reserve books and photocopy Industrial Revolution chapter."
+  },
+
+  // 12 Pending tasks (5 due within 7 days: Oct 15 - Oct 21)
+  {
+    id: "task-5",
+    title: "Complete Cell Structure Lab Report",
+    course: "Biology 101",
+    dueDate: "2026-10-17",
+    status: "pending",
+    priority: "high",
+    isAssigned: true,
+    description: "Compile microscope measurements and write conclusion."
+  },
+  {
+    id: "task-6",
+    title: "Solve Problem Set 7.c Exercises",
+    course: "Arithmetic 2",
+    dueDate: "2026-10-18",
+    status: "pending",
+    priority: "high",
+    isAssigned: true,
+    description: "Draft solutions for problems 1 to 15."
+  },
+  {
+    id: "task-7",
+    title: "Revise Industrial Revolution Essay",
+    course: "History 201",
+    dueDate: "2026-10-20",
+    status: "pending",
+    priority: "high",
+    isAssigned: true,
+    description: "Address instructor feedback regarding secondary sources."
+  },
+  {
+    id: "task-8",
+    title: "Read Chapter 5: Enzyme Kinetics",
+    course: "Biology 101",
+    dueDate: "2026-10-16",
+    status: "pending",
+    priority: "medium",
+    isAssigned: false,
+    description: "Highlight key concepts on competitive inhibition."
+  },
+  {
+    id: "task-9",
+    title: "Set Up Chemistry Lab Notebook",
+    course: "Chemistry 101",
+    dueDate: "2026-10-19",
+    status: "pending",
+    priority: "medium",
+    isAssigned: false,
+    description: "Pre-lab writeup for titration experiment."
+  },
+  {
+    id: "task-10",
+    title: "Chemistry Titration Worksheet",
+    course: "Chemistry 101",
+    dueDate: "2026-10-22",
+    status: "pending",
+    priority: "medium",
+    isAssigned: true,
+    description: "Complete pre-lab calculations and titration curves."
+  },
+  {
+    id: "task-11",
+    title: "Arithmetic Quiz Prep Set",
+    course: "Arithmetic 2",
+    dueDate: "2026-10-24",
+    status: "pending",
+    priority: "medium",
+    isAssigned: true,
+    description: "Work through practice quiz set for exam 2."
+  },
+  {
+    id: "task-12",
+    title: "Draft Outline for Midterm Project",
+    course: "Computer Science",
+    dueDate: "2026-10-26",
+    status: "pending",
+    priority: "high",
+    isAssigned: false,
+    description: "Outline system architecture and UI components."
+  },
+  {
+    id: "task-13",
+    title: "Review English Lit Discussion Prompts",
+    course: "English Lit",
+    dueDate: "2026-10-28",
+    status: "pending",
+    priority: "low",
+    isAssigned: false,
+    description: "Prepare talking points for seminar discussion."
+  },
+  {
+    id: "task-14",
+    title: "Read History 201 Primary Sources",
+    course: "History 201",
+    dueDate: "2026-10-29",
+    status: "pending",
+    priority: "medium",
+    isAssigned: false,
+    description: "Examine parliamentary testimony excerpts."
+  },
+  {
+    id: "task-15",
+    title: "Organize Digital Study Notes",
+    course: "General",
+    dueDate: "2026-10-30",
+    status: "pending",
+    priority: "low",
+    isAssigned: false,
+    description: "Consolidate week 1-6 lecture summaries into folder."
+  },
+  {
+    id: "task-16",
+    title: "Schedule Peer Study Group",
+    course: "Arithmetic 2",
+    dueDate: "2026-10-31",
+    status: "pending",
+    priority: "low",
+    isAssigned: false,
+    description: "Book study room in central library for group revision."
+  },
+
+  // 24 Completed tasks
+  { id: "task-17", title: "Genetics Problem Set", course: "Biology 101", dueDate: "2026-10-05", status: "completed", priority: "high", isAssigned: true },
+  { id: "task-18", title: "Renaissance Art Presentation", course: "History 201", dueDate: "2026-09-28", status: "completed", priority: "medium", isAssigned: true },
+  { id: "task-19", title: "Photosynthesis Experiment Log", course: "Biology 101", dueDate: "2026-09-20", status: "completed", priority: "high", isAssigned: true },
+  { id: "task-20", title: "Linear Systems Diagnostic", course: "Arithmetic 2", dueDate: "2026-09-15", status: "completed", priority: "high", isAssigned: true },
+  { id: "task-21", title: "Hamlet Close Reading", course: "English Lit", dueDate: "2026-09-10", status: "completed", priority: "medium", isAssigned: true },
+  { id: "task-22", title: "Periodic Trends Data Sheet", course: "Chemistry 101", dueDate: "2026-09-05", status: "completed", priority: "medium", isAssigned: true },
+  { id: "task-23", title: "Mitosis Sketchbook", course: "Biology 101", dueDate: "2026-08-30", status: "completed", priority: "medium", isAssigned: false },
+  { id: "task-24", title: "Vector Geometry Assignment", course: "Arithmetic 2", dueDate: "2026-08-25", status: "completed", priority: "high", isAssigned: false },
+  { id: "task-25", title: "Enlightenment Matrix", course: "History 201", dueDate: "2026-08-20", status: "completed", priority: "medium", isAssigned: false },
+  { id: "task-26", title: "Victorian Era Poetry Comparison", course: "English Lit", dueDate: "2026-08-15", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-27", title: "Stoichiometry Practice Set", course: "Chemistry 101", dueDate: "2026-08-10", status: "completed", priority: "high", isAssigned: false },
+  { id: "task-28", title: "Cellular Respiration Quiz Review", course: "Biology 101", dueDate: "2026-08-05", status: "completed", priority: "medium", isAssigned: false },
+  { id: "task-29", title: "Trigonometric Identities Worksheet", course: "Arithmetic 2", dueDate: "2026-08-01", status: "completed", priority: "medium", isAssigned: false },
+  { id: "task-30", title: "Feudal Systems Analysis", course: "History 201", dueDate: "2026-07-25", status: "completed", priority: "medium", isAssigned: false },
+  { id: "task-31", title: "Syllabus Review and Course Registration", course: "General", dueDate: "2026-07-20", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-32", title: "Campus ID Card Renewal", course: "General", dueDate: "2026-07-18", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-33", title: "Download Textbook PDF Chapters", course: "Biology 101", dueDate: "2026-07-15", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-34", title: "Calculator Battery Replacement", course: "Arithmetic 2", dueDate: "2026-07-12", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-35", title: "Set Up Lab Safety Goggles", course: "Chemistry 101", dueDate: "2026-07-10", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-36", title: "Join Discord Study Group", course: "General", dueDate: "2026-07-08", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-37", title: "Install Graphing Software", course: "Arithmetic 2", dueDate: "2026-07-05", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-38", title: "History Timeline Flashcards", course: "History 201", dueDate: "2026-07-03", status: "completed", priority: "medium", isAssigned: false },
+  { id: "task-39", title: "Grammar & Citation Handbook Reading", course: "English Lit", dueDate: "2026-07-02", status: "completed", priority: "low", isAssigned: false },
+  { id: "task-40", title: "Semester Goal Setting Sheet", course: "General", dueDate: "2026-07-01", status: "completed", priority: "low", isAssigned: false }
+];
+
+// Notifications mirroring Image 5
+export const initialNotifications = [
+  {
+    id: "notif-1",
+    title: "Poetry Analysis is overdue",
+    course: "English Lit",
+    meta: "English Lit · 2 days ago",
+    timeAgo: "2 days ago",
+    type: "alert",
+    category: "Overdue alerts",
+    isRead: false,
+    link: "/assignments"
+  },
+  {
+    id: "notif-2",
+    title: "Cell Structure Lab Report due soon",
+    course: "Biology 101",
+    meta: "Biology 101 · due 17 Oct",
+    timeAgo: "due 17 Oct",
+    type: "reminder",
+    category: "Reminders",
+    isRead: false,
+    link: "/assignments"
+  },
+  {
+    id: "notif-3",
+    title: "Industrial Revolution Essay needs revision",
+    course: "History 201",
+    meta: "History 201 · instructor feedback",
+    timeAgo: "instructor feedback",
+    type: "feedback",
+    category: "Feedback",
+    isRead: false,
+    link: "/assignments"
+  },
+  {
+    id: "notif-4",
+    title: "Quiz Prep Set submitted",
+    course: "Arithmetic 2",
+    meta: "Arithmetic 2 · on time",
+    timeAgo: "on time",
+    type: "submission",
+    category: "Recent",
+    isRead: false,
+    link: "/assignments"
+  },
+  {
+    id: "notif-5",
+    title: "Grades published: Genetics Problem Set",
+    course: "Biology 101",
+    meta: "Biology 101 · scored 92%",
+    timeAgo: "1 week ago",
+    type: "feedback",
+    category: "Feedback",
+    isRead: true,
+    link: "/progress"
+  },
+  {
+    id: "notif-6",
+    title: "Faculty announcement: Chemistry lab shifted to Room 302",
+    course: "Chemistry 101",
+    meta: "Chemistry 101 · Dr. Robert Vance",
+    timeAgo: "1 week ago",
+    type: "reminder",
+    category: "Reminders",
+    isRead: true,
+    link: "/calendar"
+  }
+];
+
+export const weeklyProductivityData = [
+  { day: "Mon", percent: 60 },
+  { day: "Tue", percent: 75 },
+  { day: "Wed", percent: 55 },
+  { day: "Thu", percent: 85 },
+  { day: "Fri", percent: 70 },
+  { day: "Sat", percent: 40 },
+  { day: "Sun", percent: 50 }
+];
+
+export const courseGradesData = [
+  { course: "Biology 101", score: 90 },
+  { course: "Arithmetic 2", score: 84 },
+  { course: "History 201", score: 80 }
+];
