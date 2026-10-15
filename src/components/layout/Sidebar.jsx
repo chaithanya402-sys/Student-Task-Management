@@ -10,13 +10,17 @@ import {
   User,
   Sliders,
   LogOut,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react";
 import { StudyDeckLogo } from "../common/StudyDeckLogo";
 import { useStudyDeck } from "../../context/StudyDeckContext";
 
 export const Sidebar = ({ isOpen, onClose }) => {
-  const { stats, logout } = useStudyDeck();
+  const { stats, logout, user, isSidebarCollapsed, toggleSidebarCollapse } = useStudyDeck();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -25,7 +29,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const navClass = ({ isActive }) =>
-    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 select-none ${
+    `flex items-center ${
+      isSidebarCollapsed ? "justify-center px-2" : "gap-3 px-3.5"
+    } py-2.5 rounded-xl text-xs font-medium transition-all duration-150 select-none ${
       isActive
         ? "bg-[#282b30] text-white shadow-xs font-semibold"
         : "text-[#596579] hover:text-[#0f1f38] hover:bg-gray-100/70"
@@ -33,13 +39,29 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const navContent = (
     <div className="flex flex-col h-full justify-between py-2">
-      {/* Brand & Menu */}
-      <div className="space-y-6">
-        {/* Logo and close button on mobile */}
-        <div className="flex items-center justify-between px-2 pt-1">
-          <NavLink to="/dashboard" onClick={onClose} className="hover:opacity-90 transition-opacity">
-            <StudyDeckLogo />
+      <div className="space-y-4">
+        {/* Brand header + Collapse Toggle Button */}
+        <div className={`flex items-center ${isSidebarCollapsed ? "justify-center flex-col gap-2" : "justify-between px-2"} pt-1`}>
+          <NavLink
+            to="/dashboard"
+            onClick={onClose}
+            className="hover:opacity-90 transition-opacity"
+            title="StudyFlow Dashboard"
+          >
+            <StudyDeckLogo iconOnly={isSidebarCollapsed} brandName="StudyFlow" />
           </NavLink>
+
+          {/* Desktop Toggle Button */}
+          <button
+            onClick={toggleSidebarCollapse}
+            className="hidden lg:flex p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+            title={isSidebarCollapsed ? "Expand Sidebar (Hide top preview bar)" : "Collapse Sidebar (Show top preview bar)"}
+            aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+          </button>
+
+          {/* Mobile close button */}
           {onClose && (
             <button
               onClick={onClose}
@@ -52,69 +74,119 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Section: MENU */}
         <div className="space-y-1">
-          <div className="px-3 pb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-            Menu
-          </div>
-          <NavLink to="/dashboard" onClick={onClose} className={navClass}>
+          {!isSidebarCollapsed && (
+            <div className="px-3 pb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              Menu
+            </div>
+          )}
+          <NavLink to="/dashboard" onClick={onClose} className={navClass} title="Dashboard">
             <LayoutGrid size={17} className="shrink-0" />
-            <span>Dashboard</span>
+            {!isSidebarCollapsed && <span>Dashboard</span>}
           </NavLink>
-          <NavLink to="/tasks" onClick={onClose} className={navClass}>
+
+          <NavLink to="/tasks" onClick={onClose} className={navClass} title="My Tasks">
             <ListTodo size={17} className="shrink-0" />
-            <span>My Tasks</span>
+            {!isSidebarCollapsed && <span>My Tasks</span>}
           </NavLink>
-          <NavLink to="/assignments" onClick={onClose} className={navClass}>
+
+          <NavLink to="/assignments" onClick={onClose} className={navClass} title="Assignments">
             <FileText size={17} className="shrink-0" />
-            <span>Assignments</span>
+            {!isSidebarCollapsed && <span>Assignments</span>}
           </NavLink>
-          <NavLink to="/calendar" onClick={onClose} className={navClass}>
+
+          <NavLink to="/calendar" onClick={onClose} className={navClass} title="Calendar / Planner">
             <CalendarIcon size={17} className="shrink-0" />
-            <span>Calendar</span>
+            {!isSidebarCollapsed && <span>Calendar</span>}
           </NavLink>
-          <NavLink to="/notifications" onClick={onClose} className={navClass}>
+
+          <NavLink to="/notifications" onClick={onClose} className={navClass} title="Notifications">
             <div className="relative shrink-0">
               <Bell size={17} />
               {stats.unreadNotifications > 0 && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white"></span>
               )}
             </div>
-            <span className="flex-1">Notifications</span>
-            {stats.unreadNotifications > 0 && (
-              <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-blue-100 text-blue-800 font-bold">
-                {stats.unreadNotifications}
-              </span>
+            {!isSidebarCollapsed && (
+              <>
+                <span className="flex-1">Notifications</span>
+                {stats.unreadNotifications > 0 && (
+                  <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-blue-100 text-blue-800 font-bold">
+                    {stats.unreadNotifications}
+                  </span>
+                )}
+              </>
             )}
           </NavLink>
-          <NavLink to="/progress" onClick={onClose} className={navClass}>
+
+          <NavLink to="/progress" onClick={onClose} className={navClass} title="My Progress">
             <BarChart2 size={17} className="shrink-0" />
-            <span>My Progress</span>
+            {!isSidebarCollapsed && <span>My Progress</span>}
           </NavLink>
         </div>
 
         {/* Section: ACCOUNT */}
-        <div className="space-y-1 pt-2">
-          <div className="px-3 pb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-            Account
-          </div>
-          <NavLink to="/profile" onClick={onClose} className={navClass}>
+        <div className="space-y-1 pt-1">
+          {!isSidebarCollapsed && (
+            <div className="px-3 pb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              Account
+            </div>
+          )}
+          <NavLink to="/profile" onClick={onClose} className={navClass} title="My Profile">
             <User size={17} className="shrink-0" />
-            <span>My Profile</span>
+            {!isSidebarCollapsed && <span>My Profile</span>}
           </NavLink>
-          <NavLink to="/settings" onClick={onClose} className={navClass}>
+
+          <NavLink to="/settings" onClick={onClose} className={navClass} title="Settings">
             <Sliders size={17} className="shrink-0" />
-            <span>Settings</span>
+            {!isSidebarCollapsed && <span>Settings</span>}
           </NavLink>
         </div>
+
+        {/* Semester Progress Card (Visible only when Expanded) */}
+        {!isSidebarCollapsed && (
+          <div className="p-3.5 bg-gray-50/90 rounded-2xl border border-gray-100/90 my-2">
+            <div className="flex items-center justify-between text-[11px] font-bold text-gray-700">
+              <span>Autumn 2026</span>
+              <span className="text-[#0f1f38]">65%</span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-200 rounded-full mt-2 overflow-hidden">
+              <div className="w-[65%] h-full bg-[#0f1f38] rounded-full transition-all duration-500"></div>
+            </div>
+            <span className="text-[10px] text-gray-400 mt-1.5 block font-medium">Semester Week 8 of 12</span>
+          </div>
+        )}
       </div>
 
-      {/* Bottom: Logout */}
-      <div className="pt-6 border-t border-gray-100 px-1">
+      {/* Bottom Area: User profile & Logout */}
+      <div className="pt-4 border-t border-gray-100 px-1 space-y-2">
+        {/* User preview snippet */}
+        <div
+          className={`flex items-center ${
+            isSidebarCollapsed ? "justify-center p-1" : "gap-2.5 p-2"
+          } rounded-xl bg-gray-50/80 border border-gray-100`}
+          title={`${user.fullName} (${user.programme}, Year ${user.year})`}
+        >
+          <div className="w-7 h-7 rounded-full bg-[#0f1f38] text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+            {user.initials || "AK"}
+          </div>
+          {!isSidebarCollapsed && (
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="text-xs font-bold text-gray-900 truncate">{user.fullName}</p>
+              <p className="text-[10px] text-gray-500 truncate">{user.programme}, Year {user.year}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Logout button */}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#596579] hover:text-red-700 hover:bg-red-50/60 transition-colors cursor-pointer text-left"
+          className={`w-full flex items-center ${
+            isSidebarCollapsed ? "justify-center" : "gap-3 px-3"
+          } py-2 rounded-xl text-xs font-semibold text-[#596579] hover:text-red-700 hover:bg-red-50/60 transition-colors cursor-pointer text-left`}
+          title="Log out"
         >
           <LogOut size={16} />
-          <span>Log out</span>
+          {!isSidebarCollapsed && <span>Log out</span>}
         </button>
       </div>
     </div>
@@ -122,8 +194,12 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:flex flex-col w-56 shrink-0 pr-4 border-r border-gray-100/90 select-none">
+      {/* Desktop sidebar: smooth transition between w-60 (expanded) and w-20 (collapsed) */}
+      <aside
+        className={`hidden lg:flex flex-col shrink-0 border-r border-gray-100/90 select-none transition-all duration-200 ease-in-out ${
+          isSidebarCollapsed ? "w-20 pr-2" : "w-60 pr-4"
+        }`}
+      >
         {navContent}
       </aside>
 

@@ -3,11 +3,23 @@ import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { FacultySidebar } from "./FacultySidebar";
 import { FacultyTopNav } from "./FacultyTopNav";
 import { CreateAssignmentModal } from "./CreateAssignmentModal";
+import { StudyFlowTopPreviewBar } from "../common/StudyFlowTopPreviewBar";
+import { StudyCoachModal } from "../common/StudyCoachModal";
+import { AuthDemoAccountsModal } from "../common/AuthDemoAccountsModal";
 import { useStudyDeck } from "../../context/StudyDeckContext";
 import { Maximize2, Minimize2 } from "lucide-react";
 
 export const FacultyLayout = () => {
-  const { isAuthenticated, user, facultyStats } = useStudyDeck();
+  const {
+    isAuthenticated,
+    user,
+    facultyStats,
+    isSidebarCollapsed,
+    isStudyCoachOpen,
+    setIsStudyCoachOpen,
+    isAuthSwitcherOpen,
+    setIsAuthSwitcherOpen
+  } = useStudyDeck();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFramedView, setIsFramedView] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -116,6 +128,16 @@ export const FacultyLayout = () => {
         />
 
         <div className="flex-1 min-w-0 flex flex-col">
+          {/* Top Horizontal Preview Bar:
+              - Appears ONLY when sidebar is collapsed
+              - Hidden when sidebar is expanded */}
+          {isSidebarCollapsed && (
+            <StudyFlowTopPreviewBar
+              onOpenCoach={() => setIsStudyCoachOpen(true)}
+              onOpenAuth={() => setIsAuthSwitcherOpen(true)}
+            />
+          )}
+
           <FacultyTopNav
             title={title}
             subtitle={subtitle}
@@ -129,10 +151,18 @@ export const FacultyLayout = () => {
         </div>
       </div>
 
-      {/* Global Create Assignment Modal */}
+      {/* Global Modals */}
       <CreateAssignmentModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+      />
+      <StudyCoachModal
+        isOpen={isStudyCoachOpen}
+        onClose={() => setIsStudyCoachOpen(false)}
+      />
+      <AuthDemoAccountsModal
+        isOpen={isAuthSwitcherOpen}
+        onClose={() => setIsAuthSwitcherOpen(false)}
       />
     </div>
   );

@@ -3,11 +3,24 @@ import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 import { FilterModal } from "../common/FilterModal";
+import { StudyFlowTopPreviewBar } from "../common/StudyFlowTopPreviewBar";
+import { StudyCoachModal } from "../common/StudyCoachModal";
+import { AuthDemoAccountsModal } from "../common/AuthDemoAccountsModal";
 import { useStudyDeck } from "../../context/StudyDeckContext";
 import { Maximize2, Minimize2 } from "lucide-react";
 
 export const AppLayout = () => {
-  const { isAuthenticated, user, stats } = useStudyDeck();
+  const {
+    isAuthenticated,
+    user,
+    stats,
+    isSidebarCollapsed,
+    isStudyCoachOpen,
+    setIsStudyCoachOpen,
+    isAuthSwitcherOpen,
+    setIsAuthSwitcherOpen
+  } = useStudyDeck();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFramedView, setIsFramedView] = useState(true);
   const location = useLocation();
@@ -61,7 +74,7 @@ export const AppLayout = () => {
         };
       default:
         return {
-          title: "StudyDeck",
+          title: "StudyFlow",
           subtitle: "Student task management platform"
         };
     }
@@ -77,10 +90,10 @@ export const AppLayout = () => {
           : "bg-[#f4f6f9]"
       }`}
     >
-      {/* View switch pill (Allows toggling between screenshot framing and full responsive window) */}
+      {/* Frame top indicator */}
       <div className="w-full max-w-[1440px] flex items-center justify-between pb-2 px-2 text-xs text-white/90 font-medium">
         <span className="hidden sm:inline-flex items-center gap-1.5 opacity-80">
-          StudyDeck Academic Portal &bull; Student Dashboard
+          StudyFlow Academic Portal &bull; Student Dashboard
         </span>
         <button
           onClick={() => setIsFramedView(!isFramedView)}
@@ -100,7 +113,7 @@ export const AppLayout = () => {
         </button>
       </div>
 
-      {/* Main Container matching screenshot roundness and white card layout */}
+      {/* Main Container matching screenshot roundness */}
       <div
         className={`w-full max-w-[1440px] bg-white transition-all duration-300 ${
           isFramedView
@@ -108,7 +121,7 @@ export const AppLayout = () => {
             : "min-h-screen p-4 sm:p-6"
         } flex flex-col lg:flex-row gap-6 relative`}
       >
-        {/* Sidebar */}
+        {/* Sidebar (Expands or Collapses without covering main content) */}
         <Sidebar
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
@@ -116,6 +129,16 @@ export const AppLayout = () => {
 
         {/* Content Area */}
         <div className="flex-1 min-w-0 flex flex-col">
+          {/* Top Horizontal Preview Bar:
+              - Appears ONLY when sidebar is collapsed
+              - Hidden when sidebar is expanded */}
+          {isSidebarCollapsed && (
+            <StudyFlowTopPreviewBar
+              onOpenCoach={() => setIsStudyCoachOpen(true)}
+              onOpenAuth={() => setIsAuthSwitcherOpen(true)}
+            />
+          )}
+
           <TopNav
             title={title}
             subtitle={subtitle}
@@ -128,8 +151,16 @@ export const AppLayout = () => {
         </div>
       </div>
 
-      {/* Global Filter Modal */}
+      {/* Global Modals */}
       <FilterModal />
+      <StudyCoachModal
+        isOpen={isStudyCoachOpen}
+        onClose={() => setIsStudyCoachOpen(false)}
+      />
+      <AuthDemoAccountsModal
+        isOpen={isAuthSwitcherOpen}
+        onClose={() => setIsAuthSwitcherOpen(false)}
+      />
     </div>
   );
 };

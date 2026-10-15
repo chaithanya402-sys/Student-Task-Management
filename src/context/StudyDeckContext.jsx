@@ -89,6 +89,22 @@ export const StudyDeckProvider = ({ children }) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
+  // Sidebar collapse toggle state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem("studyflow_sidebar_collapsed") === "true";
+  });
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem("studyflow_sidebar_collapsed", String(next));
+      return next;
+    });
+  };
+
+  const [isStudyCoachOpen, setIsStudyCoachOpen] = useState(false);
+  const [isAuthSwitcherOpen, setIsAuthSwitcherOpen] = useState(false);
+
   // Sync current user ID to localStorage
   useEffect(() => {
     localStorage.setItem("studydeck_current_user_id", currentUserId);
@@ -455,7 +471,13 @@ export const StudyDeckProvider = ({ children }) => {
         updateProfile,
         login,
         logout,
-        refreshData
+        refreshData,
+        isSidebarCollapsed,
+        toggleSidebarCollapse,
+        isStudyCoachOpen,
+        setIsStudyCoachOpen,
+        isAuthSwitcherOpen,
+        setIsAuthSwitcherOpen
       }}
     >
       {children}
