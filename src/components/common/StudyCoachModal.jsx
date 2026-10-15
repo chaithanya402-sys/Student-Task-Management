@@ -34,40 +34,40 @@ export const StudyCoachModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fadeIn">
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 flex flex-col h-[580px] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col h-[580px] overflow-hidden">
         {/* Header */}
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-purple-50/60 to-blue-50/60">
+        <div className="p-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-purple-50/60 to-blue-50/60 dark:from-purple-950/30 dark:to-blue-950/30">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-purple-700 text-white flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-purple-700 dark:bg-purple-600 text-white flex items-center justify-center shadow-xs">
               <Sparkles size={16} />
             </div>
             <div>
-              <h3 className="font-extrabold text-[#0f1f38] text-sm">StudyFlow AI Coach</h3>
-              <p className="text-[11px] text-purple-700 font-semibold">Active Study & Pacing Advisor</p>
+              <h3 className="font-extrabold text-[#0f1f38] dark:text-white text-sm">StudyFlow AI Coach</h3>
+              <p className="text-[11px] text-purple-700 dark:text-purple-400 font-semibold">Active Study & Pacing Advisor</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
+            className="p-1.5 rounded-lg text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Workload Snapshot Banner */}
-        <div className="p-3 bg-gray-50 border-b border-gray-100 grid grid-cols-3 text-center text-xs divide-x divide-gray-200">
+        <div className="p-3 bg-gray-50 dark:bg-slate-800/80 border-b border-gray-100 dark:border-slate-800 grid grid-cols-3 text-center text-xs divide-x divide-gray-200 dark:divide-slate-700">
           <div>
-            <span className="block text-[10px] text-gray-400 font-semibold">Weekly Workload</span>
-            <span className="font-extrabold text-gray-900">{stats.pendingTasks} Pending</span>
+            <span className="block text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Workload</span>
+            <span className="font-extrabold text-gray-900 dark:text-slate-100">{stats.pendingTasks} Pending</span>
           </div>
           <div>
-            <span className="block text-[10px] text-gray-400 font-semibold">Completion</span>
-            <span className="font-extrabold text-blue-700">{stats.assignmentCompletionRate}%</span>
+            <span className="block text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Completion</span>
+            <span className="font-extrabold text-blue-700 dark:text-blue-400">{stats.assignmentCompletionRate}%</span>
           </div>
           <div>
-            <span className="block text-[10px] text-gray-400 font-semibold">Academic Pace</span>
-            <span className="font-extrabold text-emerald-700">On Track</span>
+            <span className="block text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Pace</span>
+            <span className="font-extrabold text-emerald-700 dark:text-emerald-400">On Track</span>
           </div>
         </div>
 
@@ -81,8 +81,8 @@ export const StudyCoachModal = ({ isOpen, onClose }) => {
               <div
                 className={`max-w-[85%] p-3.5 rounded-2xl ${
                   m.sender === "user"
-                    ? "bg-[#0f1f38] text-white"
-                    : "bg-gray-100/90 text-gray-800 border border-gray-200/60"
+                    ? "bg-[#0f1f38] dark:bg-blue-600 text-white shadow-2xs"
+                    : "bg-gray-100/90 dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-gray-200/60 dark:border-slate-700"
                 }`}
               >
                 {m.text}
@@ -92,17 +92,17 @@ export const StudyCoachModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSend} className="p-3 border-t border-gray-100 flex items-center gap-2">
+        <form onSubmit={handleSend} className="p-3 border-t border-gray-100 dark:border-slate-800 flex items-center gap-2 bg-white dark:bg-slate-900">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ask for study tips, deadline priorities, or pacing..."
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#0f1f38]"
+            className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500"
           />
           <button
             type="submit"
-            className="p-2.5 rounded-xl bg-[#0f1f38] text-white hover:bg-[#1a2e4f] cursor-pointer shrink-0"
+            className="p-2.5 rounded-xl bg-[#0f1f38] dark:bg-blue-600 text-white hover:bg-[#1a2e4f] dark:hover:bg-blue-500 transition-colors cursor-pointer shadow-2xs active:scale-95"
           >
             <Send size={15} />
           </button>

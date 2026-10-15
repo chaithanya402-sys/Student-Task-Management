@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, CheckCircle2, AlertCircle, FileText, Download, User } from "lucide-react";
+import { X, CheckCircle2, AlertCircle, FileText, Download, User, Sparkles } from "lucide-react";
 import { useStudyDeck } from "../../context/StudyDeckContext";
 
 export const GradeSubmissionModal = ({ isOpen, onClose, submission }) => {
@@ -22,6 +22,22 @@ export const GradeSubmissionModal = ({ isOpen, onClose, submission }) => {
   if (!isOpen || !submission) return null;
 
   const maxPoints = submission.max_points || 100;
+
+  const quickRubricChips = [
+    "Comprehensive analysis and solid methodology.",
+    "Code meets all technical specifications.",
+    "Well-structured report with clear citations.",
+    "Needs more testing and edge case coverage.",
+    "Late submission penalty deducted (10%)."
+  ];
+
+  const addRubricChip = (chip) => {
+    if (!feedback) {
+      setFeedback(chip);
+    } else if (!feedback.includes(chip)) {
+      setFeedback(prev => `${prev}\n${chip}`);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,21 +69,21 @@ export const GradeSubmissionModal = ({ isOpen, onClose, submission }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-800">
           <div>
-            <span className="text-[11px] font-bold text-sky-700 uppercase tracking-wider">
-              {submission.course_code} · {submission.assignment_title}
+            <span className="text-[11px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider">
+              {submission.course_code} &bull; {submission.assignment_title}
             </span>
-            <h3 className="font-bold text-[#0f1f38] text-base leading-tight">
+            <h3 className="font-bold text-[#0f1f38] dark:text-white text-base leading-tight">
               Grade Submission: {submission.student_name}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -76,39 +92,39 @@ export const GradeSubmissionModal = ({ isOpen, onClose, submission }) => {
         {success ? (
           <div className="p-10 flex flex-col items-center justify-center text-center">
             <CheckCircle2 size={54} className="text-emerald-500 mb-3 animate-bounce" />
-            <h4 className="text-lg font-bold text-[#0f1f38]">Grade Saved & Released!</h4>
-            <p className="text-xs text-gray-500 mt-1 max-w-xs">
+            <h4 className="text-lg font-bold text-[#0f1f38] dark:text-white">Grade Saved & Released!</h4>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 max-w-xs">
               {submission.student_name} has received the evaluation and feedback notification.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs rounded-xl border border-red-200 dark:border-red-900">
                 <AlertCircle size={15} />
                 <span>{error}</span>
               </div>
             )}
 
             {/* Submission metadata card */}
-            <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200/80 space-y-2 text-xs">
-              <div className="flex justify-between items-center text-gray-600">
+            <div className="p-3.5 bg-gray-50 dark:bg-slate-800/80 rounded-2xl border border-gray-200/80 dark:border-slate-700/70 space-y-2 text-xs">
+              <div className="flex justify-between items-center text-gray-600 dark:text-slate-300">
                 <span>Student:</span>
-                <span className="font-semibold text-gray-900">{submission.student_name} ({submission.student_email || "Enrolled"})</span>
+                <span className="font-semibold text-gray-900 dark:text-slate-100">{submission.student_name} ({submission.student_email || "Enrolled"})</span>
               </div>
-              <div className="flex justify-between items-center text-gray-600">
+              <div className="flex justify-between items-center text-gray-600 dark:text-slate-300">
                 <span>Submitted At:</span>
-                <span className="font-semibold text-gray-900">{submission.submitted_at}</span>
+                <span className="font-semibold text-gray-900 dark:text-slate-100">{submission.submitted_at}</span>
               </div>
-              <div className="flex justify-between items-center text-gray-600">
+              <div className="flex justify-between items-center text-gray-600 dark:text-slate-300">
                 <span>Submission File:</span>
-                <div className="flex items-center gap-1.5 font-mono text-[11px] text-blue-700 font-semibold bg-white px-2 py-0.5 rounded border border-gray-200">
+                <div className="flex items-center gap-1.5 font-mono text-[11px] text-blue-700 dark:text-blue-400 font-semibold bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-gray-200 dark:border-slate-700">
                   <FileText size={12} />
                   <span>{submission.submitted_file || "submission_document.pdf"}</span>
                 </div>
               </div>
               {submission.submitted_text && (
-                <div className="pt-1 border-t border-gray-200 text-gray-700 italic">
+                <div className="pt-2 border-t border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 italic">
                   "{submission.submitted_text}"
                 </div>
               )}
@@ -117,10 +133,10 @@ export const GradeSubmissionModal = ({ isOpen, onClose, submission }) => {
             {/* Score input */}
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-semibold text-gray-700">
+                <label className="text-xs font-semibold text-gray-700 dark:text-slate-300">
                   Awarded Score *
                 </label>
-                <span className="text-[11px] text-gray-400">
+                <span className="text-[11px] text-gray-400 dark:text-slate-500 font-medium">
                   Max points: {maxPoints}
                 </span>
               </div>
@@ -136,18 +152,37 @@ export const GradeSubmissionModal = ({ isOpen, onClose, submission }) => {
                     setError("");
                   }}
                   placeholder={`Enter 0 to ${maxPoints}`}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-[#0f1f38] focus:outline-none focus:border-[#0f1f38]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0f1f38] dark:text-white focus:outline-none focus:border-blue-500"
                   autoFocus
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-slate-500">
                   / {maxPoints}
                 </span>
               </div>
             </div>
 
+            {/* Quick Rubric Chips */}
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 dark:text-slate-400 mb-1.5">
+                Quick Rubric Feedback (Click to append):
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {quickRubricChips.map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => addRubricChip(chip)}
+                    className="text-[10px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-700 dark:hover:text-blue-300 border border-gray-200/80 dark:border-slate-700 transition-colors cursor-pointer text-left"
+                  >
+                    + {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Feedback textarea */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Instructor Feedback & Comments
               </label>
               <textarea
@@ -155,23 +190,23 @@ export const GradeSubmissionModal = ({ isOpen, onClose, submission }) => {
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
                 placeholder="Give constructive academic feedback visible to the student..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#0f1f38] resize-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 resize-none"
               />
             </div>
 
             {/* Actions */}
-            <div className="pt-3 flex items-center justify-end gap-3 border-t border-gray-100">
+            <div className="pt-3 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0f1f38] text-white hover:bg-[#1a2e4f] shadow-xs cursor-pointer disabled:opacity-60"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0f1f38] dark:bg-blue-600 text-white hover:bg-[#1a2e4f] dark:hover:bg-blue-500 shadow-xs cursor-pointer disabled:opacity-60 active:scale-95 transition-all"
               >
                 {isSubmitting ? "Saving..." : "Save & Release Grade"}
               </button>

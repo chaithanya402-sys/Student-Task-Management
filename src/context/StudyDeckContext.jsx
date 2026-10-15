@@ -105,6 +105,29 @@ export const StudyDeckProvider = ({ children }) => {
   const [isStudyCoachOpen, setIsStudyCoachOpen] = useState(false);
   const [isAuthSwitcherOpen, setIsAuthSwitcherOpen] = useState(false);
 
+  // Theme state: 'light' or 'dark'
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem("studyflow_theme");
+    if (saved) return saved;
+    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("studyflow_theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === "dark" ? "light" : "dark"));
+  };
+
   // Sync current user ID to localStorage
   useEffect(() => {
     localStorage.setItem("studydeck_current_user_id", currentUserId);
@@ -477,7 +500,9 @@ export const StudyDeckProvider = ({ children }) => {
         isStudyCoachOpen,
         setIsStudyCoachOpen,
         isAuthSwitcherOpen,
-        setIsAuthSwitcherOpen
+        setIsAuthSwitcherOpen,
+        theme,
+        toggleTheme
       }}
     >
       {children}

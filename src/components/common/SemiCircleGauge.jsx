@@ -24,7 +24,8 @@ export const SemiCircleGauge = ({
           <path
             d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
             fill="none"
-            stroke="#edf2f7"
+            stroke="currentColor"
+            className="text-gray-100 dark:text-slate-800"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
@@ -33,18 +34,18 @@ export const SemiCircleGauge = ({
           <path
             d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
             fill="none"
-            stroke="#0f1f38"
+            stroke="currentColor"
+            className="text-[#0f1f38] dark:text-blue-500 transition-all duration-1000 ease-out"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={arcLength}
             strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-1000 ease-out"
           />
         </svg>
 
         {/* Center Percentage Display */}
         <div className="absolute inset-x-0 bottom-1 flex flex-col items-center justify-center text-center">
-          <span className="text-3xl font-extrabold text-[#0f1f38] tracking-tight">
+          <span className="text-3xl font-extrabold text-[#0f1f38] dark:text-white tracking-tight">
             {percentage}%
           </span>
         </div>
@@ -52,7 +53,7 @@ export const SemiCircleGauge = ({
 
       {/* Pill summary below */}
       {label && (
-        <div className="mt-4 px-4 py-1.5 rounded-full bg-[#f3f4f6] text-xs font-medium text-gray-700 tracking-tight">
+        <div className="mt-4 px-4 py-1.5 rounded-full bg-[#f3f4f6] dark:bg-slate-800/90 text-xs font-semibold text-gray-700 dark:text-slate-200 border border-transparent dark:border-slate-700 tracking-tight">
           {label}
         </div>
       )}

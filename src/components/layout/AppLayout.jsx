@@ -86,8 +86,8 @@ export const AppLayout = () => {
     <div
       className={`min-h-screen transition-all duration-300 ${
         isFramedView
-          ? "bg-[#8795a7] py-3 sm:py-6 px-2 sm:px-6 flex flex-col items-center justify-center"
-          : "bg-[#f4f6f9]"
+          ? "bg-[#8795a7] dark:bg-[#070b12] py-3 sm:py-6 px-2 sm:px-6 flex flex-col items-center justify-center"
+          : "bg-[#f4f6f9] dark:bg-[#090d16]"
       }`}
     >
       {/* Frame top indicator */}
@@ -115,9 +115,9 @@ export const AppLayout = () => {
 
       {/* Main Container matching screenshot roundness */}
       <div
-        className={`w-full max-w-[1440px] bg-white transition-all duration-300 ${
+        className={`w-full max-w-[1440px] bg-white dark:bg-[#0e1626] text-slate-900 dark:text-slate-100 transition-all duration-300 ${
           isFramedView
-            ? "rounded-3xl sm:rounded-[32px] shadow-2xl p-4 sm:p-7 md:p-8 border border-white/50"
+            ? "rounded-3xl sm:rounded-[32px] shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] p-4 sm:p-7 md:p-8 border border-white/50 dark:border-slate-800/80"
             : "min-h-screen p-4 sm:p-6"
         } flex flex-col lg:flex-row gap-6 relative`}
       >

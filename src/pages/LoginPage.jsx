@@ -51,12 +51,12 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#8795a7] py-6 px-3 sm:px-6 flex items-center justify-center">
-      <div className="w-full max-w-[1100px] bg-white rounded-3xl sm:rounded-[32px] shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60">
+    <div className="min-h-screen bg-[#8795a7] dark:bg-[#070b12] py-6 px-3 sm:px-6 flex items-center justify-center transition-colors">
+      <div className="w-full max-w-[1100px] bg-white dark:bg-[#0e1626] text-slate-900 dark:text-slate-100 rounded-3xl sm:rounded-[32px] shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60 dark:border-slate-800 transition-colors">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
           {/* Left Hero Card (Dark Navy) matching Image 2 */}
-          <div className="lg:col-span-7 bg-[#0f1f38] text-white rounded-2xl sm:rounded-3xl p-6 sm:p-9 flex flex-col justify-between space-y-8">
+          <div className="lg:col-span-7 bg-[#0f1f38] dark:bg-slate-900 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-9 flex flex-col justify-between space-y-8 border border-transparent dark:border-slate-800">
             {/* Top Logo */}
             <div>
               <StudyDeckLogo light />
@@ -158,7 +158,7 @@ export const LoginPage = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email Input */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
                     Email
                   </label>
                   <input
@@ -169,13 +169,13 @@ export const LoginPage = () => {
                       setError("");
                     }}
                     placeholder="you@college.edu"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#0f1f38] text-gray-900 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:outline-none focus:border-blue-500 text-gray-900 dark:text-slate-100 transition-colors shadow-2xs"
                   />
                 </div>
 
                 {/* Password Input */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
                     Password
                   </label>
                   <div className="relative">
@@ -187,12 +187,12 @@ export const LoginPage = () => {
                         setError("");
                       }}
                       placeholder="Enter your password"
-                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#0f1f38] text-gray-900 transition-colors"
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:outline-none focus:border-blue-500 text-gray-900 dark:text-slate-100 transition-colors shadow-2xs"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -201,12 +201,12 @@ export const LoginPage = () => {
 
                 {/* Keep me signed in & Forgot password */}
                 <div className="flex items-center justify-between text-xs pt-0.5">
-                  <label className="flex items-center gap-2 text-gray-600 select-none cursor-pointer">
+                  <label className="flex items-center gap-2 text-gray-600 dark:text-slate-400 select-none cursor-pointer">
                     <input
                       type="checkbox"
                       checked={keepSignedIn}
                       onChange={(e) => setKeepSignedIn(e.target.checked)}
-                      className="rounded border-gray-300 text-[#0f1f38] focus:ring-0 cursor-pointer"
+                      className="rounded border-gray-300 dark:border-slate-700 text-[#0f1f38] dark:text-blue-600 focus:ring-0 cursor-pointer"
                     />
                     <span>Keep me signed in</span>
                   </label>
@@ -216,7 +216,7 @@ export const LoginPage = () => {
                       e.preventDefault();
                       alert("Password reset link has been dispatched to your institution email.");
                     }}
-                    className="font-semibold text-gray-700 hover:text-[#0f1f38] underline"
+                    className="font-semibold text-gray-700 dark:text-slate-300 hover:text-blue-600 underline"
                   >
                     Forgot password?
                   </Link>
@@ -225,7 +225,7 @@ export const LoginPage = () => {
                 {/* Sign In Button */}
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-[#0f1f38] text-white text-xs font-bold hover:bg-[#1a2e4f] shadow-sm transition-all cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-[#0f1f38] dark:bg-blue-600 text-white text-xs font-bold hover:bg-[#1a2e4f] dark:hover:bg-blue-500 shadow-sm transition-all cursor-pointer active:scale-95"
                 >
                   Sign in
                 </button>
@@ -234,8 +234,8 @@ export const LoginPage = () => {
               {/* Prototype Shortcuts matching Image 2 */}
               <div className="pt-2">
                 <div className="relative flex items-center justify-center">
-                  <div className="border-t border-gray-200 w-full"></div>
-                  <span className="bg-white px-3 text-[10px] font-bold tracking-wider text-gray-400 uppercase absolute">
+                  <div className="border-t border-gray-200 dark:border-slate-800 w-full"></div>
+                  <span className="bg-white dark:bg-[#0e1626] px-3 text-[10px] font-bold tracking-wider text-gray-400 dark:text-slate-500 uppercase absolute">
                     Prototype Shortcuts
                   </span>
                 </div>
@@ -244,14 +244,14 @@ export const LoginPage = () => {
                   <button
                     type="button"
                     onClick={() => handleShortcutLogin("Student")}
-                    className="py-2 px-3 rounded-full border border-gray-300 text-xs font-semibold text-gray-700 hover:border-[#0f1f38] hover:bg-gray-50 transition-colors cursor-pointer text-center"
+                    className="py-2 px-3 rounded-full border border-gray-300 dark:border-slate-700 text-xs font-semibold text-gray-700 dark:text-slate-300 hover:border-[#0f1f38] dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center active:scale-95"
                   >
                     Student
                   </button>
                   <button
                     type="button"
                     onClick={() => handleShortcutLogin("Faculty")}
-                    className="py-2 px-3 rounded-full border border-gray-300 text-xs font-semibold text-gray-700 hover:border-[#0f1f38] hover:bg-gray-50 transition-colors cursor-pointer text-center"
+                    className="py-2 px-3 rounded-full border border-gray-300 dark:border-slate-700 text-xs font-semibold text-gray-700 dark:text-slate-300 hover:border-[#0f1f38] dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center active:scale-95"
                   >
                     Faculty
                   </button>
@@ -260,7 +260,7 @@ export const LoginPage = () => {
                   <button
                     type="button"
                     onClick={() => handleShortcutLogin("Chairman")}
-                    className="w-full py-2 px-3 rounded-full border border-gray-300 text-xs font-semibold text-gray-700 hover:border-[#0f1f38] hover:bg-gray-50 transition-colors cursor-pointer text-center"
+                    className="w-full py-2 px-3 rounded-full border border-gray-300 dark:border-slate-700 text-xs font-semibold text-gray-700 dark:text-slate-300 hover:border-[#0f1f38] dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center active:scale-95"
                   >
                     Chairman
                   </button>

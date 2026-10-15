@@ -7,7 +7,7 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
 
   const [formData, setFormData] = useState({
     title: "",
-    course: "Biology 101",
+    course: "CS101 Data Structures",
     dueDate: new Date().toISOString().split("T")[0],
     priority: "medium",
     status: "pending",
@@ -21,7 +21,7 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
     if (taskToEdit) {
       setFormData({
         title: taskToEdit.title || "",
-        course: taskToEdit.course || "Biology 101",
+        course: taskToEdit.course || "CS101 Data Structures",
         dueDate: taskToEdit.dueDate || new Date().toISOString().split("T")[0],
         priority: taskToEdit.priority || "medium",
         status: taskToEdit.status || "pending",
@@ -31,7 +31,7 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
     } else {
       setFormData({
         title: "",
-        course: "Biology 101",
+        course: "CS101 Data Structures",
         dueDate: new Date().toISOString().split("T")[0],
         priority: "medium",
         status: "pending",
@@ -61,18 +61,18 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-[#0f1f38] text-base">
+            <h3 className="font-bold text-[#0f1f38] dark:text-white text-base">
               {taskToEdit ? "Edit Task" : "Create New Task"}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -81,14 +81,14 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs rounded-xl border border-red-200 dark:border-red-900">
               <AlertCircle size={15} />
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Task Title *
             </label>
             <input
@@ -98,54 +98,56 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
                 setFormData({ ...formData, title: e.target.value });
                 setError("");
               }}
-              placeholder="e.g., Read Chapter 5 and take notes"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0f1f38] transition-colors"
+              placeholder="e.g., Read Chapter 5 and implement AVL Tree"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
               autoFocus
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Course / Subject
               </label>
               <select
                 value={formData.course}
                 onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0f1f38] bg-white cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:border-blue-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 cursor-pointer"
               >
+                <option value="CS101 Data Structures">CS101 Data Structures</option>
+                <option value="CS204 Databases">CS204 Databases</option>
+                <option value="CS310 Web Systems">CS310 Web Systems</option>
+                <option value="CS402 Machine Learning">CS402 Machine Learning</option>
                 <option value="Biology 101">Biology 101</option>
                 <option value="Arithmetic 2">Arithmetic 2</option>
                 <option value="History 201">History 201</option>
                 <option value="English Lit">English Lit</option>
-                <option value="Chemistry 101">Chemistry 101</option>
-                <option value="Computer Science">Computer Science</option>
                 <option value="General">General / Personal</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Due Date
               </label>
               <input
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0f1f38] bg-white cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:border-blue-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 cursor-pointer"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Priority
               </label>
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0f1f38] bg-white cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:border-blue-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 cursor-pointer"
               >
                 <option value="high">High Priority</option>
                 <option value="medium">Medium Priority</option>
@@ -154,15 +156,16 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Status
               </label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0f1f38] bg-white cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:border-blue-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 cursor-pointer"
               >
-                <option value="pending">Pending</option>
+                <option value="pending">To Do (Pending)</option>
+                <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
                 <option value="overdue">Overdue</option>
               </select>
@@ -170,7 +173,7 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Description (Optional)
             </label>
             <textarea
@@ -178,7 +181,7 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Additional guidelines, checklist or notes..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0f1f38] transition-colors resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-gray-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition-colors resize-none"
             />
           </div>
 
@@ -188,25 +191,25 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
               id="isAssignedCheck"
               checked={formData.isAssigned}
               onChange={(e) => setFormData({ ...formData, isAssigned: e.target.checked })}
-              className="rounded border-gray-300 text-[#0f1f38] focus:ring-0 cursor-pointer"
+              className="rounded border-gray-300 dark:border-slate-700 text-[#0f1f38] dark:text-blue-600 focus:ring-0 cursor-pointer"
             />
-            <label htmlFor="isAssignedCheck" className="text-xs text-gray-600 select-none cursor-pointer">
-              Mark as official faculty-assigned task
+            <label htmlFor="isAssignedCheck" className="text-xs text-gray-600 dark:text-slate-400 select-none cursor-pointer">
+              Mark as official faculty-assigned coursework
             </label>
           </div>
 
           {/* Footer Buttons */}
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100">
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-[#0f1f38] text-white hover:bg-[#1a2e4f] shadow-sm transition-all cursor-pointer"
+              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0f1f38] dark:bg-blue-600 text-white hover:bg-[#1a2e4f] dark:hover:bg-blue-500 shadow-sm transition-all cursor-pointer active:scale-95"
             >
               {taskToEdit ? "Save Changes" : "Create Task"}
             </button>
