@@ -704,10 +704,23 @@ app.get("/api/student/stats", async (req, res) => {
   try {
     const studentId = req.query.studentId || "user-student-alex";
 
-    const totalTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ?", [studentId]);
-    const pendingTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND status = 'pending'", [studentId]);
-    const completedTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND status = 'completed'", [studentId]);
-    const overdueTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND status = 'overdue'", [studentId]);
+    const totalTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND (is_archived = 0 OR is_archived IS NULL)", [studentId]);
+    const pendingTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND status = 'pending' AND (is_archived = 0 OR is_archived IS NULL)", [studentId]);
+    const inProgressTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND status = 'in_progress' AND (is_archived = 0 OR is_archived IS NULL)", [studentId]);
+    const completedTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND status = 'completed' AND (is_archived = 0 OR is_archived IS NULL)", [studentId]);
+    const overdueTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND status = 'overdue' AND (is_archived = 0 OR is_archived IS NULL)", [studentId]);
+
+    const personalTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND category = 'Personal' AND (is_archived = 0 OR is_archived IS NULL)", [studentId]);
+    const academicTasksRow = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = ? AND category != 'Personal' AND (is_archived = 0 OR is_archived IS NULL)", [studentId]);
+
+    const dueSoonRow = await get(
+      `SELECT COUNT(*) as count FROM student_tasks 
+       WHERE student_id = ? 
+         AND status IN ('pending', 'in_progress') 
+         AND due_date BETWEEN date('now') AND date('now', '+7 days') 
+         AND (is_archived = 0 OR is_archived IS NULL)`,
+      [studentId]
+    );
 
     // Assignments in enrolled courses
     const enrAsgRow = await get(
@@ -730,8 +743,12 @@ app.get("/api/student/stats", async (req, res) => {
 
     const totalTasks = totalTasksRow ? totalTasksRow.count : 0;
     const pendingTasks = pendingTasksRow ? pendingTasksRow.count : 0;
+    const inProgressTasks = inProgressTasksRow ? inProgressTasksRow.count : 0;
     const completedTasks = completedTasksRow ? completedTasksRow.count : 0;
     const overdueTasks = overdueTasksRow ? overdueTasksRow.count : 0;
+    const personalTasks = personalTasksRow ? personalTasksRow.count : 0;
+    const assignedTasks = academicTasksRow ? academicTasksRow.count : 0;
+    const dueWithin7Days = dueSoonRow ? dueSoonRow.count : 4;
     const totalAssignments = enrAsgRow ? (enrAsgRow.total || 0) : 0;
     const submittedAssignments = enrAsgRow ? (enrAsgRow.submitted || 0) : 0;
     const averageGrade = gradesRow && gradesRow.avg_marks ? Number(gradesRow.avg_marks.toFixed(1)) : 84.7;
@@ -739,8 +756,12 @@ app.get("/api/student/stats", async (req, res) => {
     res.json({
       totalTasks,
       pendingTasks,
+      inProgressTasks,
       completedTasks,
       overdueTasks,
+      personalTasks,
+      assignedTasks,
+      dueWithin7Days,
       taskCompletionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
       totalAssignments,
       submittedAssignments,
@@ -819,10 +840,15 @@ app.post("/api/students/check-in", async (req, res) => {
 app.get("/api/tasks", async (req, res) => {
   try {
     const userId = req.query.userId || "user-student-alex";
-    const tasks = await all(
-      "SELECT * FROM student_tasks WHERE student_id = ? ORDER BY due_date ASC",
-      [userId]
-    );
+    const includeArchived = req.query.includeArchived === "true";
+
+    let sql = "SELECT * FROM student_tasks WHERE student_id = ?";
+    if (!includeArchived) {
+      sql += " AND (is_archived = 0 OR is_archived IS NULL)";
+    }
+    sql += " ORDER BY due_date ASC";
+
+    const tasks = await all(sql, [userId]);
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -831,7 +857,20 @@ app.get("/api/tasks", async (req, res) => {
 
 app.post("/api/tasks", async (req, res) => {
   try {
-    const { student_id, assignment_id, title, course_code, due_date, status, priority, is_assigned, description } = req.body;
+    const {
+      student_id,
+      assignment_id,
+      title,
+      course_code,
+      due_date,
+      status,
+      priority,
+      is_assigned,
+      description,
+      category,
+      is_favorite,
+      attachment_count
+    } = req.body;
 
     if (!student_id || !title || !due_date) {
       return res.status(400).json({ error: "Missing required task fields (student_id, title, due_date)" });
@@ -839,8 +878,8 @@ app.post("/api/tasks", async (req, res) => {
 
     const id = `task-${Date.now()}`;
     await run(
-      `INSERT INTO student_tasks (id, student_id, assignment_id, title, course_code, due_date, status, priority, is_assigned, description)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO student_tasks (id, student_id, assignment_id, title, course_code, due_date, status, priority, is_assigned, description, category, is_favorite, is_archived, attachment_count)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
       [
         id,
         student_id,
@@ -851,7 +890,10 @@ app.post("/api/tasks", async (req, res) => {
         status || "pending",
         priority || "medium",
         is_assigned ? 1 : 0,
-        description || ""
+        description || "",
+        category || "Personal",
+        is_favorite ? 1 : 0,
+        attachment_count !== undefined ? Number(attachment_count) : 0
       ]
     );
 
@@ -866,7 +908,18 @@ app.post("/api/tasks", async (req, res) => {
 app.put("/api/tasks/:id", async (req, res) => {
   try {
     const taskId = req.params.id;
-    const { title, course_code, due_date, status, priority, description } = req.body;
+    const {
+      title,
+      course_code,
+      due_date,
+      status,
+      priority,
+      description,
+      category,
+      is_favorite,
+      is_archived,
+      attachment_count
+    } = req.body;
 
     const existing = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
     if (!existing) return res.status(404).json({ error: "Task not found" });
@@ -878,12 +931,58 @@ app.put("/api/tasks/:id", async (req, res) => {
            due_date = COALESCE(?, due_date),
            status = COALESCE(?, status),
            priority = COALESCE(?, priority),
-           description = COALESCE(?, description)
+           description = COALESCE(?, description),
+           category = COALESCE(?, category),
+           is_favorite = COALESCE(?, is_favorite),
+           is_archived = COALESCE(?, is_archived),
+           attachment_count = COALESCE(?, attachment_count)
        WHERE id = ?`,
-      [title, course_code, due_date, status, priority, description, taskId]
+      [
+        title,
+        course_code,
+        due_date,
+        status,
+        priority,
+        description,
+        category,
+        is_favorite !== undefined ? (is_favorite ? 1 : 0) : null,
+        is_archived !== undefined ? (is_archived ? 1 : 0) : null,
+        attachment_count !== undefined ? Number(attachment_count) : null,
+        taskId
+      ]
     );
 
     await logActivity(existing.student_id, "UPDATE_TASK", "task", taskId, `Updated task ${taskId} status to ${status || existing.status}`);
+    const updated = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/tasks/:id/favorite", async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const existing = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
+    if (!existing) return res.status(404).json({ error: "Task not found" });
+
+    const newFav = existing.is_favorite === 1 ? 0 : 1;
+    await run("UPDATE student_tasks SET is_favorite = ? WHERE id = ?", [newFav, taskId]);
+    const updated = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/tasks/:id/archive", async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const existing = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
+    if (!existing) return res.status(404).json({ error: "Task not found" });
+
+    const newArchived = existing.is_archived === 1 ? 0 : 1;
+    await run("UPDATE student_tasks SET is_archived = ? WHERE id = ?", [newArchived, taskId]);
     const updated = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
     res.json(updated);
   } catch (err) {
@@ -944,11 +1043,11 @@ app.get("/api/student/export/tasks", async (req, res) => {
     const studentId = req.query.studentId || "user-student-alex";
     const tasks = await all("SELECT * FROM student_tasks WHERE student_id = ? ORDER BY due_date ASC", [studentId]);
 
-    const headers = "Task ID,Title,Course,Due Date,Status,Priority,Assigned By Faculty,Description\n";
+    const headers = "Task ID,Title,Course,Category,Due Date,Status,Priority,Favorite,Attachments,Assigned By Faculty,Description\n";
     const rows = tasks
       .map((t) => {
         const cleanDesc = (t.description || "").replace(/"/g, '""');
-        return `"${t.id}","${t.title}","${t.course_code || 'General'}","${t.due_date}","${t.status}","${t.priority}",${t.is_assigned ? 'Yes' : 'No'},"${cleanDesc}"`;
+        return `"${t.id}","${t.title}","${t.course_code || 'General'}","${t.category || 'Personal'}","${t.due_date}","${t.status}","${t.priority}",${t.is_favorite ? 'Yes' : 'No'},${t.attachment_count || 0},${t.is_assigned ? 'Yes' : 'No'},"${cleanDesc}"`;
       })
       .join("\n");
 

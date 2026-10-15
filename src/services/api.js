@@ -76,6 +76,22 @@ export const api = {
     if (!res.ok) throw new Error(data.error || "Failed to delete task");
     return data;
   },
+  toggleTaskFavorite: async (id) => {
+    const res = await fetch(`${API_BASE}/tasks/${id}/favorite`, {
+      method: "PUT"
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to toggle favorite");
+    return data;
+  },
+  archiveTask: async (id) => {
+    const res = await fetch(`${API_BASE}/tasks/${id}/archive`, {
+      method: "PUT"
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to archive task");
+    return data;
+  },
 
   // Courses
   getCourses: async (userId) => {

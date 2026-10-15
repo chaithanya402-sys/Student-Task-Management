@@ -39,7 +39,7 @@ export const ProfilePage = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 w-full">
       {savedSuccess && (
         <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-xl border border-emerald-200 animate-fadeIn">
           <CheckCircle2 size={16} className="text-emerald-600" />

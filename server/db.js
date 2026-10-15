@@ -256,11 +256,30 @@ export const initDb = async () => {
     );
   }
 
+  // Migrate student_tasks table columns if missing
+  const taskCols = await all("PRAGMA table_info(student_tasks)");
+  const taskColNames = taskCols.map(c => c.name);
+  if (!taskColNames.includes("category")) {
+    await run("ALTER TABLE student_tasks ADD COLUMN category TEXT DEFAULT 'Personal';");
+  }
+  if (!taskColNames.includes("is_favorite")) {
+    await run("ALTER TABLE student_tasks ADD COLUMN is_favorite INTEGER DEFAULT 0;");
+  }
+  if (!taskColNames.includes("is_archived")) {
+    await run("ALTER TABLE student_tasks ADD COLUMN is_archived INTEGER DEFAULT 0;");
+  }
+  if (!taskColNames.includes("attachment_count")) {
+    await run("ALTER TABLE student_tasks ADD COLUMN attachment_count INTEGER DEFAULT 0;");
+  }
+
   // Ensure full 40 student tasks for Alex Kumar if fewer than 10 exist
   const alexTaskCount = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = 'user-student-alex'");
   if (alexTaskCount.count < 10) {
     await seedAllAlexTasks();
   }
+
+  // Enrich Alex Kumar tasks to match StudyDeck reference cards
+  await enrichAlexTasks();
 };
 
 const seedDatabase = async () => {
@@ -468,6 +487,233 @@ export const seedAllAlexTasks = async () => {
       [t.id, t.title, t.course, t.dueDate, t.status, t.priority, t.isAssigned, t.description]
     );
   }
+};
+
+export const enrichAlexTasks = async () => {
+  const keyCards = [
+    {
+      id: "task-showcase-1",
+      title: "Complete Cell Structure Lab Report",
+      course_code: "CS101 · Data Structures",
+      due_date: "2026-10-17",
+      status: "pending",
+      priority: "high",
+      category: "Personal",
+      is_favorite: 0,
+      attachment_count: 2,
+      description: "Write the lab report and include all observations and results."
+    },
+    {
+      id: "task-showcase-2",
+      title: "Problem Set 8: Relational Algebra",
+      course_code: "CS204 · Databases",
+      due_date: "2026-10-18",
+      status: "pending",
+      priority: "high",
+      category: "Assignment",
+      is_favorite: 0,
+      attachment_count: 1,
+      description: "Solve problems 1-5 and upload solutions."
+    },
+    {
+      id: "task-showcase-3",
+      title: "Solve Problem Set 7: Exercises",
+      course_code: "CS204 · Databases",
+      due_date: "2026-10-18",
+      status: "pending",
+      priority: "medium",
+      category: "Assignment",
+      is_favorite: 0,
+      attachment_count: 0,
+      description: "Complete all exercise questions."
+    },
+    {
+      id: "task-showcase-4",
+      title: "Read Chapter 5: Enzyme Kinetics",
+      course_code: "BIOLOGY 101 · Biology",
+      due_date: "2026-10-20",
+      status: "pending",
+      priority: "medium",
+      category: "Personal",
+      is_favorite: 0,
+      attachment_count: 0,
+      description: "Read and make short notes."
+    },
+    {
+      id: "task-showcase-5",
+      title: "Build A Caching System",
+      course_code: "CS101 · Data Structures",
+      due_date: "2026-10-21",
+      status: "in_progress",
+      priority: "medium",
+      category: "Project",
+      is_favorite: 1,
+      attachment_count: 3,
+      description: "Implement Redis caching for the API."
+    },
+    {
+      id: "task-showcase-6",
+      title: "Data Structures Queues and Stacks",
+      course_code: "CS101 · Data Structures",
+      due_date: "2026-11-03",
+      status: "in_progress",
+      priority: "low",
+      category: "Assignment",
+      is_favorite: 0,
+      attachment_count: 1,
+      description: "Implement queue and stack operations."
+    },
+    {
+      id: "task-showcase-7",
+      title: "Design UI for Student Portal",
+      course_code: "IT205 · Web Technologies",
+      due_date: "2026-11-05",
+      status: "in_progress",
+      priority: "medium",
+      category: "Project",
+      is_favorite: 0,
+      attachment_count: 2,
+      description: "Create responsive UI components."
+    },
+    {
+      id: "task-showcase-8",
+      title: "Prepare Midterm Questions",
+      course_code: "CS101 · Data Structures",
+      due_date: "2026-11-08",
+      status: "in_progress",
+      priority: "high",
+      category: "Personal",
+      is_favorite: 0,
+      attachment_count: 0,
+      description: "Compile previous year questions."
+    },
+    {
+      id: "task-showcase-9",
+      title: "Lab 4 Code Cleanup",
+      course_code: "CS204 · Databases",
+      due_date: "2026-10-10",
+      status: "overdue",
+      priority: "high",
+      category: "Assignment",
+      is_favorite: 0,
+      attachment_count: 2,
+      description: "Fix bugs and clean up code."
+    },
+    {
+      id: "task-showcase-10",
+      title: "Arithmetic 2 Problem Set 6",
+      course_code: "CS101 · Data Structures",
+      due_date: "2026-10-11",
+      status: "overdue",
+      priority: "medium",
+      category: "Assignment",
+      is_favorite: 0,
+      attachment_count: 1,
+      description: "Complete remaining questions."
+    },
+    {
+      id: "task-showcase-11",
+      title: "Review Biology Week 4 Slides",
+      course_code: "BIOLOGY 101 · Biology",
+      due_date: "2026-10-12",
+      status: "overdue",
+      priority: "high",
+      category: "Personal",
+      is_favorite: 1,
+      attachment_count: 0,
+      description: "Go through slides and make notes."
+    },
+    {
+      id: "task-showcase-12",
+      title: "History Timeline Flashcards",
+      course_code: "HISTORY 201 · History",
+      due_date: "2026-10-13",
+      status: "overdue",
+      priority: "medium",
+      category: "Study",
+      is_favorite: 0,
+      attachment_count: 1,
+      description: "Complete flashcards for chapter 3."
+    },
+    {
+      id: "task-showcase-13",
+      title: "Semester Goal Setting Sheet",
+      course_code: "General",
+      due_date: "2026-10-07",
+      status: "completed",
+      priority: "low",
+      category: "Personal",
+      is_favorite: 0,
+      attachment_count: 0,
+      description: "Set GPA and target milestones."
+    },
+    {
+      id: "task-showcase-14",
+      title: "Grammar & Citation Handbook Reading",
+      course_code: "English Lit",
+      due_date: "2026-10-02",
+      status: "completed",
+      priority: "low",
+      category: "Study",
+      is_favorite: 0,
+      attachment_count: 1,
+      description: "MLA citation format guide."
+    },
+    {
+      id: "task-showcase-15",
+      title: "Arithmetic 2 Practice Set 1",
+      course_code: "Arithmetic 2",
+      due_date: "2026-10-01",
+      status: "completed",
+      priority: "low",
+      category: "Assignment",
+      is_favorite: 0,
+      attachment_count: 0,
+      description: "Solve first 10 problems."
+    }
+  ];
+
+  for (const card of keyCards) {
+    const existing = await get(
+      "SELECT id FROM student_tasks WHERE student_id = 'user-student-alex' AND title = ?",
+      [card.title]
+    );
+    if (existing) {
+      await run(
+        `UPDATE student_tasks 
+         SET course_code = ?, due_date = ?, status = ?, priority = ?, category = ?, is_favorite = ?, attachment_count = ?, description = ?
+         WHERE id = ?`,
+        [card.course_code, card.due_date, card.status, card.priority, card.category, card.is_favorite, card.attachment_count, card.description, existing.id]
+      );
+    } else {
+      await run(
+        `INSERT INTO student_tasks (id, student_id, assignment_id, title, course_code, due_date, status, priority, is_assigned, description, category, is_favorite, attachment_count)
+         VALUES (?, 'user-student-alex', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [card.id, card.title, card.course_code, card.due_date, card.status, card.priority, card.category === 'Assignment' ? 1 : 0, card.description, card.category, card.is_favorite, card.attachment_count]
+      );
+    }
+  }
+
+  // Ensure remaining tasks have realistic categories
+  await run(`
+    UPDATE student_tasks
+    SET category = CASE 
+      WHEN is_assigned = 1 THEN 'Assignment'
+      WHEN title LIKE '%Project%' OR title LIKE '%System%' OR title LIKE '%UI%' THEN 'Project'
+      WHEN title LIKE '%Read%' OR title LIKE '%Study%' OR title LIKE '%Handbook%' OR title LIKE '%Flashcards%' THEN 'Study'
+      ELSE 'Personal'
+    END
+    WHERE category IS NULL OR category = 'Personal' AND is_assigned = 1;
+  `);
+
+  await run(`
+    UPDATE student_tasks
+    SET attachment_count = CASE
+      WHEN is_assigned = 1 THEN 1
+      ELSE 0
+    END
+    WHERE attachment_count IS NULL;
+  `);
 };
 
 export default db;

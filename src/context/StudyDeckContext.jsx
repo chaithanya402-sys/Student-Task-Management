@@ -199,7 +199,11 @@ export const StudyDeckProvider = ({ children }) => {
               status: t.status,
               priority: t.priority,
               isAssigned: Boolean(t.is_assigned),
-              description: t.description || ""
+              description: t.description || "",
+              category: t.category || (Boolean(t.is_assigned) ? "Assignment" : "Personal"),
+              isFavorite: Boolean(t.is_favorite),
+              isArchived: Boolean(t.is_archived),
+              attachmentCount: Number(t.attachment_count || 0)
             }))
           );
         }
@@ -371,7 +375,10 @@ export const StudyDeckProvider = ({ children }) => {
         status: newTask.status || "pending",
         priority: newTask.priority || "medium",
         is_assigned: newTask.isAssigned ? 1 : 0,
-        description: newTask.description || ""
+        description: newTask.description || "",
+        category: newTask.category || "Personal",
+        is_favorite: newTask.isFavorite ? 1 : 0,
+        attachment_count: newTask.attachmentCount || 0
       });
       const formatted = {
         id: created.id,
@@ -381,7 +388,11 @@ export const StudyDeckProvider = ({ children }) => {
         status: created.status,
         priority: created.priority,
         isAssigned: Boolean(created.is_assigned),
-        description: created.description
+        description: created.description,
+        category: created.category || "Personal",
+        isFavorite: Boolean(created.is_favorite),
+        isArchived: Boolean(created.is_archived),
+        attachmentCount: Number(created.attachment_count || 0)
       };
       setTasks((prev) => [formatted, ...prev]);
       await refreshData();
@@ -391,7 +402,11 @@ export const StudyDeckProvider = ({ children }) => {
         ...newTask,
         id: `task-${Date.now()}`,
         status: newTask.status || "pending",
-        isAssigned: newTask.isAssigned || false
+        isAssigned: newTask.isAssigned || false,
+        category: newTask.category || "Personal",
+        isFavorite: newTask.isFavorite || false,
+        isArchived: false,
+        attachmentCount: newTask.attachmentCount || 0
       };
       setTasks((prev) => [fallback, ...prev]);
     }
@@ -405,13 +420,46 @@ export const StudyDeckProvider = ({ children }) => {
         due_date: updates.dueDate,
         status: updates.status,
         priority: updates.priority,
-        description: updates.description
+        description: updates.description,
+        category: updates.category,
+        is_favorite: updates.isFavorite !== undefined ? (updates.isFavorite ? 1 : 0) : undefined,
+        is_archived: updates.isArchived !== undefined ? (updates.isArchived ? 1 : 0) : undefined,
+        attachment_count: updates.attachmentCount
       });
       setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
       await refreshData();
     } catch (err) {
       console.error("Error updating task in SQLite:", err);
       setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    }
+  };
+
+  const toggleFavoriteTask = async (id) => {
+    // Optimistic UI update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, isFavorite: !t.isFavorite } : t))
+    );
+    try {
+      await api.toggleTaskFavorite(id);
+    } catch (err) {
+      console.error("Error toggling favorite in SQLite:", err);
+      // Revert on error
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, isFavorite: !t.isFavorite } : t))
+      );
+    }
+  };
+
+  const archiveTask = async (id) => {
+    // Optimistic UI update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, isArchived: !t.isArchived } : t))
+    );
+    try {
+      await api.archiveTask(id);
+      await refreshData();
+    } catch (err) {
+      console.error("Error archiving task in SQLite:", err);
     }
   };
 
@@ -430,7 +478,7 @@ export const StudyDeckProvider = ({ children }) => {
     const target = tasks.find((t) => t.id === id);
     if (!target) return;
     const nextStatus = target.status === "completed" ? "pending" : "completed";
-    await updateTask(id, { status: nextStatus });
+    await updateTask(id, { ...target, status: nextStatus });
   };
 
   // Notification actions
@@ -621,6 +669,8 @@ export const StudyDeckProvider = ({ children }) => {
         updateTask,
         deleteTask,
         toggleTaskStatus,
+        toggleFavoriteTask,
+        archiveTask,
         markNotificationRead,
         markAllNotificationsRead,
         updateProfile,

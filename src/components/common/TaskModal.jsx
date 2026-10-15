@@ -7,10 +7,13 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
 
   const [formData, setFormData] = useState({
     title: "",
-    course: "CS101 Data Structures",
+    course: "CS101 · Data Structures",
     dueDate: new Date().toISOString().split("T")[0],
     priority: "medium",
     status: "pending",
+    category: "Personal",
+    attachmentCount: 0,
+    isFavorite: false,
     isAssigned: false,
     description: ""
   });
@@ -21,20 +24,26 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
     if (taskToEdit) {
       setFormData({
         title: taskToEdit.title || "",
-        course: taskToEdit.course || "CS101 Data Structures",
+        course: taskToEdit.course || "CS101 · Data Structures",
         dueDate: taskToEdit.dueDate || new Date().toISOString().split("T")[0],
         priority: taskToEdit.priority || "medium",
         status: taskToEdit.status || "pending",
+        category: taskToEdit.category || "Personal",
+        attachmentCount: taskToEdit.attachmentCount || 0,
+        isFavorite: Boolean(taskToEdit.isFavorite),
         isAssigned: taskToEdit.isAssigned || false,
         description: taskToEdit.description || ""
       });
     } else {
       setFormData({
         title: "",
-        course: "CS101 Data Structures",
+        course: "CS101 · Data Structures",
         dueDate: new Date().toISOString().split("T")[0],
         priority: "medium",
         status: "pending",
+        category: "Personal",
+        attachmentCount: 0,
+        isFavorite: false,
         isAssigned: false,
         description: ""
       });
@@ -172,6 +181,38 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                Category
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:border-blue-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 cursor-pointer"
+              >
+                <option value="Personal">Personal</option>
+                <option value="Assignment">Assignment</option>
+                <option value="Project">Project</option>
+                <option value="Study">Study</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                Attachments Count
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value={formData.attachmentCount}
+                onChange={(e) => setFormData({ ...formData, attachmentCount: parseInt(e.target.value) || 0 })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:border-blue-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 cursor-pointer"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Description (Optional)
@@ -185,17 +226,32 @@ export const TaskModal = ({ isOpen, onClose, taskToEdit = null }) => {
             />
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              type="checkbox"
-              id="isAssignedCheck"
-              checked={formData.isAssigned}
-              onChange={(e) => setFormData({ ...formData, isAssigned: e.target.checked })}
-              className="rounded border-gray-300 dark:border-slate-700 text-[#0f1f38] dark:text-blue-600 focus:ring-0 cursor-pointer"
-            />
-            <label htmlFor="isAssignedCheck" className="text-xs text-gray-600 dark:text-slate-400 select-none cursor-pointer">
-              Mark as official faculty-assigned coursework
-            </label>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isAssignedCheck"
+                checked={formData.isAssigned}
+                onChange={(e) => setFormData({ ...formData, isAssigned: e.target.checked })}
+                className="rounded border-gray-300 dark:border-slate-700 text-[#0f1f38] dark:text-blue-600 focus:ring-0 cursor-pointer"
+              />
+              <label htmlFor="isAssignedCheck" className="text-xs text-gray-600 dark:text-slate-400 select-none cursor-pointer">
+                Official faculty-assigned
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isFavoriteCheck"
+                checked={formData.isFavorite}
+                onChange={(e) => setFormData({ ...formData, isFavorite: e.target.checked })}
+                className="rounded border-gray-300 dark:border-slate-700 text-amber-500 focus:ring-0 cursor-pointer"
+              />
+              <label htmlFor="isFavoriteCheck" className="text-xs text-gray-600 dark:text-slate-400 select-none cursor-pointer flex items-center gap-1">
+                <span>⭐ Add to Favorites</span>
+              </label>
+            </div>
           </div>
 
           {/* Footer Buttons */}
