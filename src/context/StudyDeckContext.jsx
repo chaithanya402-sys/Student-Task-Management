@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
+import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from "react";
+import { api } from "../services/api";
 import {
   initialUser,
   initialTasks,
@@ -11,57 +12,368 @@ import {
 const StudyDeckContext = createContext(null);
 
 export const StudyDeckProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("studydeck_user");
-    return saved ? JSON.parse(saved) : initialUser;
+  // Active User ID
+  const [currentUserId, setCurrentUserId] = useState(() => {
+    return localStorage.getItem("studydeck_current_user_id") || "user-student-alex";
   });
 
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const saved = localStorage.getItem("studydeck_auth");
-    return saved !== null ? JSON.parse(saved) : true;
+  const [allUsers, setAllUsers] = useState([
+    { id: "user-faculty-rao", name: "Dr. S. Rao", email: "dr.rao@college.edu", role: "faculty", department: "Computer Science", initials: "SR" },
+    { id: "user-student-alex", name: "Alex Kumar", email: "alex.kumar@college.edu", role: "student", department: "Computer Science & Engineering", initials: "AK", programme: "B.Tech", year: "2" },
+    { id: "user-student-priya", name: "Priya Nair", email: "priya.nair@college.edu", role: "student", department: "Computer Science & Engineering", initials: "PN", programme: "B.Tech", year: "2" },
+    { id: "user-student-rahul", name: "Rahul Verma", email: "rahul.verma@college.edu", role: "student", department: "Computer Science & Engineering", initials: "RV", programme: "B.Tech", year: "2" },
+    { id: "user-student-sarah", name: "Sarah Miller", email: "sarah.miller@college.edu", role: "student", department: "Fine Arts & Literature", initials: "SM", programme: "B.A.", year: "1" }
+  ]);
+
+  const [user, setUser] = useState(initialUser);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+
+  // Student portal state
+  const [tasks, setTasks] = useState(initialTasks);
+  const [assignments, setAssignments] = useState(initialAssignments);
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [studentStats, setStudentStats] = useState({
+    totalTasks: 40,
+    personalTasks: 28,
+    assignedTasks: 12,
+    pendingTasks: 12,
+    completedTasks: 24,
+    overdueTasks: 4,
+    taskCompletionRate: 60,
+    totalAssignments: 20,
+    submittedAssignments: 17,
+    assignmentCompletionRate: 85,
+    averageGrade: 84.7,
+    gradeGap: 15.3,
+    onTimeRate: 78,
+    onTimeCount: 18,
+    latePendingCount: 5
   });
 
-  const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem("studydeck_tasks");
-    return saved ? JSON.parse(saved) : initialTasks;
+  // Faculty portal state
+  const [facultyCourses, setFacultyCourses] = useState([
+    { id: "course-cs101", code: "CS101", name: "Data Structures", enrolled_count: 40, submitted_count: 34 },
+    { id: "course-cs204", code: "CS204", name: "Databases", enrolled_count: 36, submitted_count: 28 },
+    { id: "course-cs310", code: "CS310", name: "Web Systems", enrolled_count: 32, submitted_count: 22 },
+    { id: "course-cs402", code: "CS402", name: "Machine Learning", enrolled_count: 20, submitted_count: 18 }
+  ]);
+
+  const [facultyAssignments, setFacultyAssignments] = useState([]);
+  const [facultySubmissions, setFacultySubmissions] = useState([]);
+  const [facultyStats, setFacultyStats] = useState({
+    assignedCourses: 4,
+    enrolledStudents: 128,
+    activeAssignments: 7,
+    totalSubmissions: 312,
+    awaitingGrading: 46,
+    gradedCount: 266,
+    gradedPercentage: 85,
+    overdueCount: 18,
+    courseProgress: [
+      { code: "CS101", name: "Data Structures", enrolled: 40, submitted: 34 },
+      { code: "CS204", name: "Databases", enrolled: 36, submitted: 28 },
+      { code: "CS310", name: "Web Systems", enrolled: 32, submitted: 22 },
+      { code: "CS402", name: "Machine Learning", enrolled: 20, submitted: 18 }
+    ],
+    recentSubmissions: [],
+    suggestedCheckIns: [
+      { id: "user-student-kiran", name: "Kiran Das", initials: "KD", reason: "4 overdue items, mostly CS204" },
+      { id: "user-student-meera", name: "Meera Joshi", initials: "MJ", reason: "3 overdue items, CS101 and CS310" },
+      { id: "user-student-arjun", name: "Arjun Menon", initials: "AM", reason: "3 overdue items, CS101" }
+    ]
   });
 
-  const [assignments, setAssignments] = useState(() => {
-    const saved = localStorage.getItem("studydeck_assignments");
-    return saved ? JSON.parse(saved) : initialAssignments;
-  });
-
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem("studydeck_notifications");
-    return saved ? JSON.parse(saved) : initialNotifications;
-  });
-
+  // UI state
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'overdue', 'pending', 'completed', 'high'
+  const [facultySearchQuery, setFacultySearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // Sync with localStorage
+  // Sync current user ID to localStorage
   useEffect(() => {
-    localStorage.setItem("studydeck_user", JSON.stringify(user));
-  }, [user]);
+    localStorage.setItem("studydeck_current_user_id", currentUserId);
+  }, [currentUserId]);
+
+  // Fetch all users list
+  useEffect(() => {
+    api.getUsers().then(users => {
+      if (users && users.length > 0) setAllUsers(users);
+    }).catch(() => {});
+  }, []);
+
+  // Fetch full connected data from backend
+  const refreshData = useCallback(async () => {
+    try {
+      // 1. Fetch active user
+      const currentUserData = await api.getCurrentUser(currentUserId);
+      if (currentUserData) {
+        setUser({
+          id: currentUserData.id,
+          fullName: currentUserData.name,
+          initials: currentUserData.initials,
+          programme: currentUserData.programme || "B.Tech",
+          year: currentUserData.year || "2",
+          email: currentUserData.email,
+          studentId: currentUserData.id.replace("user-", "").toUpperCase(),
+          department: currentUserData.department,
+          role: currentUserData.role
+        });
+      }
+
+      // 2. Fetch Notifications
+      const notifs = await api.getNotifications(currentUserId);
+      if (Array.isArray(notifs) && notifs.length > 0) {
+        setNotifications(notifs.map(n => ({
+          ...n,
+          isRead: Boolean(n.is_read)
+        })));
+      }
+
+      // 3. Role-specific fetching
+      if (currentUserData && currentUserData.role === "faculty") {
+        const [courses, asgs, subs, statsData] = await Promise.all([
+          api.getCourses(currentUserId),
+          api.getAssignments(currentUserId),
+          api.getSubmissions(currentUserId),
+          api.getFacultyStats(currentUserId)
+        ]);
+
+        if (Array.isArray(courses)) setFacultyCourses(courses);
+        if (Array.isArray(asgs)) setFacultyAssignments(asgs);
+        if (Array.isArray(subs)) setFacultySubmissions(subs);
+        if (statsData) setFacultyStats(statsData);
+      } else {
+        // Student role
+        const [studentAsgs, statsData] = await Promise.all([
+          api.getAssignments(currentUserId),
+          api.getStudentStats(currentUserId)
+        ]);
+
+        if (Array.isArray(studentAsgs) && studentAsgs.length > 0) {
+          // Merge with initial assignments to ensure full 20 items match screenshot metrics
+          setAssignments(prev => {
+            const backendMap = new Map(studentAsgs.map(a => [a.title.toLowerCase(), a]));
+            return prev.map(a => {
+              const fromBackend = backendMap.get(a.title.toLowerCase());
+              if (fromBackend) {
+                return {
+                  ...a,
+                  id: fromBackend.id,
+                  status: fromBackend.student_status === "graded"
+                    ? "Submitted"
+                    : fromBackend.student_status === "submitted"
+                    ? "Submitted"
+                    : fromBackend.student_status === "late"
+                    ? "Overdue"
+                    : a.status,
+                  grade: fromBackend.marks ? `${fromBackend.marks}%` : a.grade,
+                  instructorFeedback: fromBackend.feedback || a.instructorFeedback,
+                  displayDate: fromBackend.display_date || a.displayDate,
+                  dueDate: fromBackend.due_date || a.dueDate
+                };
+              }
+              return a;
+            });
+          });
+        }
+
+        if (statsData) {
+          setStudentStats(prev => ({
+            ...prev,
+            ...statsData,
+            assignmentCompletionRate: statsData.assignmentCompletionRate || 85,
+            averageGrade: statsData.averageGrade || 84.7
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn("Backend API sync warning:", err);
+    }
+  }, [currentUserId]);
 
   useEffect(() => {
-    localStorage.setItem("studydeck_auth", JSON.stringify(isAuthenticated));
-  }, [isAuthenticated]);
+    refreshData();
+  }, [refreshData]);
 
-  useEffect(() => {
-    localStorage.setItem("studydeck_tasks", JSON.stringify(tasks));
-  }, [tasks]);
+  // Switch active user
+  const switchUser = (newUserId) => {
+    setCurrentUserId(newUserId);
+    const targetUser = allUsers.find(u => u.id === newUserId);
+    if (targetUser) {
+      setUser({
+        id: targetUser.id,
+        fullName: targetUser.name,
+        initials: targetUser.initials,
+        programme: targetUser.programme || "B.Tech",
+        year: targetUser.year || "2",
+        email: targetUser.email,
+        studentId: targetUser.id.replace("user-", "").toUpperCase(),
+        department: targetUser.department,
+        role: targetUser.role
+      });
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem("studydeck_assignments", JSON.stringify(assignments));
-  }, [assignments]);
+  // Connected Workflow: Faculty Publishes Assignment
+  const publishAssignment = async (data) => {
+    try {
+      await api.createAssignment({
+        faculty_id: currentUserId,
+        course_id: data.course_id,
+        title: data.title,
+        description: data.description,
+        max_points: data.max_points || 100,
+        due_date: data.due_date,
+        display_date: data.display_date || data.due_date
+      });
+      await refreshData();
+    } catch (err) {
+      console.error("Error publishing assignment:", err);
+      throw err;
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem("studydeck_notifications", JSON.stringify(notifications));
-  }, [notifications]);
+  // Connected Workflow: Faculty Updates Assignment
+  const updateFacultyAssignment = async (id, data) => {
+    try {
+      await api.updateAssignment(id, data);
+      await refreshData();
+    } catch (err) {
+      console.error("Error updating assignment:", err);
+      throw err;
+    }
+  };
 
-  // Computed metrics
+  // Connected Workflow: Student Submits Assignment
+  const submitAssignment = async (assignmentId, fileName, text) => {
+    try {
+      await api.submitWork({
+        assignment_id: assignmentId,
+        student_id: currentUserId,
+        submitted_file: fileName || "submission_document.pdf",
+        submitted_text: text || ""
+      });
+
+      // Update local student assignments state immediately
+      setAssignments(prev => prev.map(a => {
+        if (a.id === assignmentId) {
+          return {
+            ...a,
+            status: "Submitted",
+            submittedFile: fileName || "submission_document.pdf",
+            submittedDate: new Date().toISOString().split("T")[0]
+          };
+        }
+        return a;
+      }));
+
+      await refreshData();
+    } catch (err) {
+      console.error("Error submitting work:", err);
+      // Fallback local update
+      setAssignments(prev => prev.map(a => a.id === assignmentId ? { ...a, status: "Submitted" } : a));
+    }
+  };
+
+  // Connected Workflow: Faculty Grades Student Submission
+  const gradeStudentSubmission = async (submissionId, marks, feedback) => {
+    try {
+      await api.gradeSubmission(submissionId, {
+        faculty_id: currentUserId,
+        marks,
+        feedback
+      });
+      await refreshData();
+    } catch (err) {
+      console.error("Error grading submission:", err);
+      throw err;
+    }
+  };
+
+  // Connected Workflow: Faculty Sends Student Check-In
+  const sendStudentCheckIn = async (studentId, message) => {
+    try {
+      await api.sendCheckIn({
+        faculty_id: currentUserId,
+        student_id: studentId,
+        message
+      });
+      await refreshData();
+    } catch (err) {
+      console.error("Error sending check-in:", err);
+    }
+  };
+
+  // Student Task Actions
+  const addTask = (newTask) => {
+    const task = {
+      ...newTask,
+      id: `task-${Date.now()}`,
+      status: newTask.status || "pending",
+      isAssigned: newTask.isAssigned || false
+    };
+    setTasks(prev => [task, ...prev]);
+  };
+
+  const updateTask = (id, updates) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
+  const deleteTask = (id) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+  };
+
+  const toggleTaskStatus = (id) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        const nextStatus = t.status === "completed" ? "pending" : "completed";
+        return { ...t, status: nextStatus };
+      }
+      return t;
+    }));
+  };
+
+  // Notification actions
+  const markNotificationRead = async (id) => {
+    try {
+      await api.markNotificationRead(id);
+    } catch (err) {}
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  };
+
+  const markAllNotificationsRead = async () => {
+    try {
+      await api.markAllNotificationsRead(currentUserId);
+    } catch (err) {}
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  };
+
+  // Profile actions
+  const updateProfile = (data) => {
+    setUser(prev => ({
+      ...prev,
+      ...data,
+      initials: data.fullName
+        ? data.fullName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
+        : prev.initials
+    }));
+  };
+
+  // Login & Logout
+  const login = (role = "student", email = "alex.kumar@college.edu") => {
+    setIsAuthenticated(true);
+    if (role === "faculty") {
+      switchUser("user-faculty-rao");
+    } else {
+      switchUser("user-student-alex");
+    }
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+  };
+
+  // Dynamic statistics calculations
   const stats = useMemo(() => {
     const totalTasks = tasks.length;
     const personalTasks = tasks.filter(t => !t.isAssigned).length;
@@ -94,122 +406,21 @@ export const StudyDeckProvider = ({ children }) => {
       onTimeRate: 78,
       onTimeCount: 18,
       latePendingCount: 5,
-      averageGrade: 84.7,
-      gradeGap: 15.3,
+      averageGrade: studentStats.averageGrade || 84.7,
+      gradeGap: Number((100 - (studentStats.averageGrade || 84.7)).toFixed(1)),
       unreadNotifications,
       overdueAlerts,
       reminderAlerts,
       feedbackAlerts
     };
-  }, [tasks, assignments, notifications]);
-
-  // Task actions
-  const addTask = (newTask) => {
-    const task = {
-      ...newTask,
-      id: `task-${Date.now()}`,
-      status: newTask.status || "pending",
-      isAssigned: newTask.isAssigned || false
-    };
-    setTasks(prev => [task, ...prev]);
-  };
-
-  const updateTask = (id, updates) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-  };
-
-  const deleteTask = (id) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
-  };
-
-  const toggleTaskStatus = (id) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id === id) {
-        const nextStatus = t.status === "completed" ? "pending" : "completed";
-        return { ...t, status: nextStatus };
-      }
-      return t;
-    }));
-  };
-
-  // Assignment actions
-  const submitAssignment = (id, fileName) => {
-    setAssignments(prev => prev.map(a => {
-      if (a.id === id) {
-        return {
-          ...a,
-          status: "Submitted",
-          submittedFile: fileName || "submission_document.pdf",
-          submittedDate: new Date().toISOString().split("T")[0]
-        };
-      }
-      return a;
-    }));
-
-    // Add a notification for assignment submission
-    const target = assignments.find(a => a.id === id);
-    if (target) {
-      setNotifications(prev => [
-        {
-          id: `notif-${Date.now()}`,
-          title: `${target.title} submitted`,
-          course: target.course,
-          meta: `${target.course} · on time`,
-          timeAgo: "just now",
-          type: "submission",
-          category: "Recent",
-          isRead: false,
-          link: "/assignments"
-        },
-        ...prev
-      ]);
-    }
-  };
-
-  // Notification actions
-  const markNotificationRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-  };
-
-  const markAllNotificationsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-  };
-
-  // Profile actions
-  const updateProfile = (data) => {
-    setUser(prev => ({
-      ...prev,
-      ...data,
-      initials: data.fullName
-        ? data.fullName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
-        : prev.initials
-    }));
-  };
-
-  // Auth actions
-  const login = (role = "student", email = "alex.kumar@college.edu") => {
-    setIsAuthenticated(true);
-    setUser(prev => ({
-      ...prev,
-      role,
-      email: email || prev.email
-    }));
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-  };
-
-  const resetToDefaults = () => {
-    setUser(initialUser);
-    setTasks(initialTasks);
-    setAssignments(initialAssignments);
-    setNotifications(initialNotifications);
-  };
+  }, [tasks, assignments, notifications, studentStats]);
 
   return (
     <StudyDeckContext.Provider
       value={{
+        currentUserId,
+        allUsers,
+        switchUser,
         user,
         isAuthenticated,
         tasks,
@@ -218,23 +429,33 @@ export const StudyDeckProvider = ({ children }) => {
         weeklyProductivityData,
         courseGradesData,
         stats,
+        facultyCourses,
+        facultyAssignments,
+        facultySubmissions,
+        facultyStats,
         searchQuery,
         setSearchQuery,
+        facultySearchQuery,
+        setFacultySearchQuery,
         activeFilter,
         setActiveFilter,
         isFilterModalOpen,
         setIsFilterModalOpen,
+        publishAssignment,
+        updateFacultyAssignment,
+        submitAssignment,
+        gradeStudentSubmission,
+        sendStudentCheckIn,
         addTask,
         updateTask,
         deleteTask,
         toggleTaskStatus,
-        submitAssignment,
         markNotificationRead,
         markAllNotificationsRead,
         updateProfile,
         login,
         logout,
-        resetToDefaults
+        refreshData
       }}
     >
       {children}

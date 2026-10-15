@@ -36,16 +36,18 @@ export const LoginPage = () => {
       setEmail("alex.kumar@college.edu");
       setPassword("studydeck2026");
       login("student", "alex.kumar@college.edu");
+      navigate("/dashboard");
     } else if (role === "Faculty") {
-      setEmail("eleanor.vance@college.edu");
+      setEmail("dr.rao@college.edu");
       setPassword("faculty2026");
-      login("faculty", "eleanor.vance@college.edu");
+      login("faculty", "dr.rao@college.edu");
+      navigate("/faculty/dashboard");
     } else {
       setEmail("admin.chancellor@college.edu");
       setPassword("chairman2026");
       login("chairman", "admin.chancellor@college.edu");
+      navigate("/dashboard");
     }
-    navigate("/dashboard");
   };
 
   return (

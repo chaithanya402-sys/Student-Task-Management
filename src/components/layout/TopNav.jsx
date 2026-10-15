@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Filter, Bell, Menu, X, Check, ArrowRight } from "lucide-react";
+import { Search, Filter, Bell, Menu, X, Check, ArrowRight, UserCheck, ChevronDown } from "lucide-react";
 import { useStudyDeck } from "../../context/StudyDeckContext";
 
 export const TopNav = ({ title, subtitle, onToggleMobileMenu }) => {
@@ -12,10 +12,14 @@ export const TopNav = ({ title, subtitle, onToggleMobileMenu }) => {
     setIsFilterModalOpen,
     activeFilter,
     notifications,
-    markNotificationRead
+    markNotificationRead,
+    currentUserId,
+    allUsers,
+    switchUser
   } = useStudyDeck();
 
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -45,7 +49,7 @@ export const TopNav = ({ title, subtitle, onToggleMobileMenu }) => {
       {/* Action controls matching screenshot */}
       <div className="flex items-center flex-wrap gap-2.5">
         {/* Search Bar */}
-        <div className="relative flex-1 sm:w-60 md:w-64">
+        <div className="relative flex-1 sm:w-56 md:w-60">
           <Search
             size={15}
             className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -82,6 +86,65 @@ export const TopNav = ({ title, subtitle, onToggleMobileMenu }) => {
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 ml-0.5"></span>
           )}
         </button>
+
+        {/* Account Switcher Pill */}
+        <div className="relative">
+          <button
+            onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer"
+            title="Switch between Students and Dr. Rao (Faculty)"
+          >
+            <UserCheck size={14} />
+            <span className="hidden sm:inline">Switch Role</span>
+            <ChevronDown size={13} />
+          </button>
+
+          {isSwitcherOpen && (
+            <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-fadeIn">
+              <div className="px-3 py-2 border-b border-gray-100">
+                <span className="text-xs font-bold text-[#0f1f38]">Interactive Account Switcher</span>
+                <p className="text-[10px] text-gray-400">Switch role to test connected data</p>
+              </div>
+              <div className="max-h-60 overflow-y-auto divide-y divide-gray-50 pt-1">
+                {allUsers.map((u) => {
+                  const isCurrent = u.id === currentUserId;
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => {
+                        switchUser(u.id);
+                        setIsSwitcherOpen(false);
+                        if (u.role === "faculty") {
+                          navigate("/faculty/dashboard");
+                        } else {
+                          navigate("/dashboard");
+                        }
+                      }}
+                      className={`w-full text-left p-2.5 rounded-xl hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors ${
+                        isCurrent ? "bg-blue-50/60" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-[#0f1f38] text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                          {u.initials}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-gray-900 leading-tight">
+                            {u.name}
+                          </div>
+                          <div className="text-[10px] text-gray-500 capitalize">
+                            {u.role} · {u.department}
+                          </div>
+                        </div>
+                      </div>
+                      {isCurrent && <Check size={14} className="text-blue-700 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Notifications Icon Button */}
         <div className="relative">
