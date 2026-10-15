@@ -183,28 +183,45 @@ export const StudyDeckProvider = ({ children }) => {
         if (statsData) setFacultyStats(statsData);
       } else {
         // Student role
-        const [studentAsgs, statsData] = await Promise.all([
+        const [studentAsgs, statsData, studentTasks] = await Promise.all([
           api.getAssignments(currentUserId),
-          api.getStudentStats(currentUserId)
+          api.getStudentStats(currentUserId),
+          api.getTasks(currentUserId)
         ]);
+
+        if (Array.isArray(studentTasks) && studentTasks.length > 0) {
+          setTasks(
+            studentTasks.map((t) => ({
+              id: t.id,
+              title: t.title,
+              course: t.course_code || "General",
+              dueDate: t.due_date,
+              status: t.status,
+              priority: t.priority,
+              isAssigned: Boolean(t.is_assigned),
+              description: t.description || ""
+            }))
+          );
+        }
 
         if (Array.isArray(studentAsgs) && studentAsgs.length > 0) {
           // Merge with initial assignments to ensure full 20 items match screenshot metrics
-          setAssignments(prev => {
-            const backendMap = new Map(studentAsgs.map(a => [a.title.toLowerCase(), a]));
-            return prev.map(a => {
+          setAssignments((prev) => {
+            const backendMap = new Map(studentAsgs.map((a) => [a.title.toLowerCase(), a]));
+            return prev.map((a) => {
               const fromBackend = backendMap.get(a.title.toLowerCase());
               if (fromBackend) {
                 return {
                   ...a,
                   id: fromBackend.id,
-                  status: fromBackend.student_status === "graded"
-                    ? "Submitted"
-                    : fromBackend.student_status === "submitted"
-                    ? "Submitted"
-                    : fromBackend.student_status === "late"
-                    ? "Overdue"
-                    : a.status,
+                  status:
+                    fromBackend.student_status === "graded"
+                      ? "Submitted"
+                      : fromBackend.student_status === "submitted"
+                      ? "Submitted"
+                      : fromBackend.student_status === "late"
+                      ? "Overdue"
+                      : a.status,
                   grade: fromBackend.marks ? `${fromBackend.marks}%` : a.grade,
                   instructorFeedback: fromBackend.feedback || a.instructorFeedback,
                   displayDate: fromBackend.display_date || a.displayDate,
@@ -217,7 +234,7 @@ export const StudyDeckProvider = ({ children }) => {
         }
 
         if (statsData) {
-          setStudentStats(prev => ({
+          setStudentStats((prev) => ({
             ...prev,
             ...statsData,
             assignmentCompletionRate: statsData.assignmentCompletionRate || 85,
@@ -343,33 +360,77 @@ export const StudyDeckProvider = ({ children }) => {
     }
   };
 
-  // Student Task Actions
-  const addTask = (newTask) => {
-    const task = {
-      ...newTask,
-      id: `task-${Date.now()}`,
-      status: newTask.status || "pending",
-      isAssigned: newTask.isAssigned || false
-    };
-    setTasks(prev => [task, ...prev]);
+  // Student Task Actions (Connected directly to SQLite via API)
+  const addTask = async (newTask) => {
+    try {
+      const created = await api.createTask({
+        student_id: currentUserId,
+        title: newTask.title,
+        course_code: newTask.course || "General",
+        due_date: newTask.dueDate,
+        status: newTask.status || "pending",
+        priority: newTask.priority || "medium",
+        is_assigned: newTask.isAssigned ? 1 : 0,
+        description: newTask.description || ""
+      });
+      const formatted = {
+        id: created.id,
+        title: created.title,
+        course: created.course_code,
+        dueDate: created.due_date,
+        status: created.status,
+        priority: created.priority,
+        isAssigned: Boolean(created.is_assigned),
+        description: created.description
+      };
+      setTasks((prev) => [formatted, ...prev]);
+      await refreshData();
+    } catch (err) {
+      console.error("Error creating task in SQLite:", err);
+      const fallback = {
+        ...newTask,
+        id: `task-${Date.now()}`,
+        status: newTask.status || "pending",
+        isAssigned: newTask.isAssigned || false
+      };
+      setTasks((prev) => [fallback, ...prev]);
+    }
   };
 
-  const updateTask = (id, updates) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  const updateTask = async (id, updates) => {
+    try {
+      await api.updateTask(id, {
+        title: updates.title,
+        course_code: updates.course,
+        due_date: updates.dueDate,
+        status: updates.status,
+        priority: updates.priority,
+        description: updates.description
+      });
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+      await refreshData();
+    } catch (err) {
+      console.error("Error updating task in SQLite:", err);
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    }
   };
 
-  const deleteTask = (id) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+  const deleteTask = async (id) => {
+    try {
+      await api.deleteTask(id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      await refreshData();
+    } catch (err) {
+      console.error("Error deleting task in SQLite:", err);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+    }
   };
 
-  const toggleTaskStatus = (id) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id === id) {
-        const nextStatus = t.status === "completed" ? "pending" : "completed";
-        return { ...t, status: nextStatus };
-      }
-      return t;
-    }));
+  const toggleTaskStatus = async (id) => {
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    const nextStatus = target.status === "completed" ? "pending" : "completed";
+    await updateTask(id, { status: nextStatus });
   };
 
   // Notification actions
@@ -377,38 +438,109 @@ export const StudyDeckProvider = ({ children }) => {
     try {
       await api.markNotificationRead(id);
     } catch (err) {}
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
   };
 
   const markAllNotificationsRead = async () => {
     try {
       await api.markAllNotificationsRead(currentUserId);
     } catch (err) {}
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
   // Profile actions
   const updateProfile = (data) => {
-    setUser(prev => ({
+    setUser((prev) => ({
       ...prev,
       ...data,
       initials: data.fullName
-        ? data.fullName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
+        ? data.fullName
+            .split(" ")
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2)
         : prev.initials
     }));
   };
 
-  // Login & Logout
-  const login = (role = "student", email = "alex.kumar@college.edu") => {
-    setIsAuthenticated(true);
-    if (role === "faculty") {
-      switchUser("user-faculty-rao");
-    } else {
-      switchUser("user-student-alex");
+  // Authentication State & Handlers
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem("studyflow_auth_token") || "");
+  const [authError, setAuthError] = useState("");
+
+  const login = async (role = "student", email = "alex.kumar@college.edu", password = "") => {
+    try {
+      setAuthError("");
+      let pass = password;
+      if (!pass) {
+        if (role === "faculty" || email.includes("rao")) pass = "faculty2026";
+        else if (role === "chairman" || email.includes("chancellor")) pass = "chairman2026";
+        else pass = "studydeck2026";
+      }
+
+      const res = await api.login({ email, password: pass });
+      if (res.token) {
+        setAuthToken(res.token);
+        localStorage.setItem("studyflow_auth_token", res.token);
+      }
+      setIsAuthenticated(true);
+      if (res.user) {
+        setCurrentUserId(res.user.id);
+        setUser({
+          id: res.user.id,
+          fullName: res.user.name,
+          initials: res.user.initials,
+          programme: res.user.programme || "B.Tech",
+          year: res.user.year || "2",
+          email: res.user.email,
+          studentId: res.user.id.replace("user-", "").toUpperCase(),
+          department: res.user.department,
+          role: res.user.role
+        });
+      }
+      return res;
+    } catch (err) {
+      setAuthError(err.message);
+      throw err;
     }
   };
 
-  const logout = () => {
+  const registerUser = async (userData) => {
+    try {
+      setAuthError("");
+      const res = await api.register(userData);
+      if (res.token) {
+        setAuthToken(res.token);
+        localStorage.setItem("studyflow_auth_token", res.token);
+        setIsAuthenticated(true);
+      }
+      if (res.user && !res.pendingApproval) {
+        setCurrentUserId(res.user.id);
+        setUser({
+          id: res.user.id,
+          fullName: res.user.name,
+          initials: res.user.initials,
+          programme: res.user.programme || "B.Tech",
+          year: res.user.year || "1",
+          email: res.user.email,
+          studentId: res.user.id.replace("user-", "").toUpperCase(),
+          department: res.user.department,
+          role: res.user.role
+        });
+      }
+      return res;
+    } catch (err) {
+      setAuthError(err.message);
+      throw err;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      if (authToken) await api.logout(authToken);
+    } catch (err) {}
+    setAuthToken("");
+    localStorage.removeItem("studyflow_auth_token");
     setIsAuthenticated(false);
   };
 
@@ -493,7 +625,10 @@ export const StudyDeckProvider = ({ children }) => {
         markAllNotificationsRead,
         updateProfile,
         login,
+        registerUser,
         logout,
+        authError,
+        authToken,
         refreshData,
         isSidebarCollapsed,
         toggleSidebarCollapse,

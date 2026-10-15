@@ -3,10 +3,10 @@ import { useStudyDeck } from "../../context/StudyDeckContext";
 import { Card } from "../../components/common/Card";
 import { Badge } from "../../components/common/Badge";
 import { GradeSubmissionModal } from "../../components/faculty/GradeSubmissionModal";
-import { UploadCloud, CheckCircle2, Clock, Filter, Search, FileText, Check, Award, ArrowUpRight } from "lucide-react";
+import { UploadCloud, CheckCircle2, Clock, Filter, Search, FileText, Check, Award, ArrowUpRight, Download } from "lucide-react";
 
 export const FacultySubmissionsPage = () => {
-  const { facultySubmissions, facultyStats, facultySearchQuery } = useStudyDeck();
+  const { facultySubmissions, facultyStats, facultySearchQuery, currentUserId } = useStudyDeck();
 
   const [activeTab, setActiveTab] = useState("all");
   const [courseFilter, setCourseFilter] = useState("all");
@@ -133,6 +133,16 @@ export const FacultySubmissionsPage = () => {
               <option value="CS310">CS310 Web Systems</option>
               <option value="CS402">CS402 Machine Learning</option>
             </select>
+
+            <a
+              href={`/api/faculty/export/submissions?facultyId=${currentUserId}`}
+              download="faculty_submissions_report.csv"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-2xs"
+              title="Export submissions to CSV"
+            >
+              <Download size={14} />
+              <span className="hidden sm:inline">Export CSV</span>
+            </a>
           </div>
         </div>
 

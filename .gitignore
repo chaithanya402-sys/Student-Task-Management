@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Database backups & snapshots
+*.bak
+*.pre_restore.db
+server/backups/

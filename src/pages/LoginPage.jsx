@@ -8,14 +8,30 @@ export const LoginPage = () => {
   const { login } = useStudyDeck();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("you@college.edu");
-  const [password, setPassword] = useState("student123");
+  const [email, setEmail] = useState("alex.kumar@college.edu");
+  const [password, setPassword] = useState("studydeck2026");
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRole, setSelectedRole] = useState("Student");
 
-  const handleSubmit = (e) => {
+  const handleSelectTab = (role) => {
+    setSelectedRole(role);
+    setError("");
+    if (role === "Student") {
+      setEmail("alex.kumar@college.edu");
+      setPassword("studydeck2026");
+    } else if (role === "Faculty") {
+      setEmail("dr.rao@college.edu");
+      setPassword("faculty2026");
+    } else {
+      setEmail("admin.chancellor@college.edu");
+      setPassword("chairman2026");
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !email.includes("@")) {
       setError("Please enter a valid institution email");
@@ -26,27 +42,40 @@ export const LoginPage = () => {
       return;
     }
 
-    login(selectedRole.toLowerCase(), email);
-    navigate("/dashboard");
+    try {
+      setIsSubmitting(true);
+      setError("");
+      await login(selectedRole.toLowerCase(), email, password);
+      if (selectedRole.toLowerCase() === "faculty") {
+        navigate("/faculty/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      setError(err.message || "Invalid credentials. Please verify your email and password.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleShortcutLogin = (role) => {
-    setSelectedRole(role);
-    if (role === "Student") {
-      setEmail("alex.kumar@college.edu");
-      setPassword("studydeck2026");
-      login("student", "alex.kumar@college.edu");
-      navigate("/dashboard");
-    } else if (role === "Faculty") {
-      setEmail("dr.rao@college.edu");
-      setPassword("faculty2026");
-      login("faculty", "dr.rao@college.edu");
-      navigate("/faculty/dashboard");
-    } else {
-      setEmail("admin.chancellor@college.edu");
-      setPassword("chairman2026");
-      login("chairman", "admin.chancellor@college.edu");
-      navigate("/dashboard");
+  const handleShortcutLogin = async (role) => {
+    handleSelectTab(role);
+    try {
+      setIsSubmitting(true);
+      if (role === "Student") {
+        await login("student", "alex.kumar@college.edu", "studydeck2026");
+        navigate("/dashboard");
+      } else if (role === "Faculty") {
+        await login("faculty", "dr.rao@college.edu", "faculty2026");
+        navigate("/faculty/dashboard");
+      } else {
+        await login("chairman", "admin.chancellor@college.edu", "chairman2026");
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -140,16 +169,42 @@ export const LoginPage = () => {
           <div className="lg:col-span-5 flex flex-col justify-center px-2 sm:px-6 py-4">
             <div className="max-w-md w-full mx-auto space-y-5">
               <div>
-                <h2 className="text-2xl font-extrabold text-[#0f1f38] tracking-tight">
+                <h2 className="text-2xl font-extrabold text-[#0f1f38] dark:text-white tracking-tight">
                   Sign in
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Use your institution account to continue.
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                  Use your institution account to access your workload portal.
                 </p>
               </div>
 
+              {/* Shared Login Portal Tabs: Student vs Faculty */}
+              <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700/60">
+                <button
+                  type="button"
+                  onClick={() => handleSelectTab("Student")}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    selectedRole === "Student"
+                      ? "bg-[#0f1f38] text-white shadow-xs dark:bg-blue-600"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Student Tab
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectTab("Faculty")}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    selectedRole === "Faculty"
+                      ? "bg-[#0f1f38] text-white shadow-xs dark:bg-blue-600"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Faculty Tab
+                </button>
+              </div>
+
               {error && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs rounded-xl border border-red-200 dark:border-red-800">
                   <AlertCircle size={15} />
                   <span>{error}</span>
                 </div>
@@ -225,9 +280,10 @@ export const LoginPage = () => {
                 {/* Sign In Button */}
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-[#0f1f38] dark:bg-blue-600 text-white text-xs font-bold hover:bg-[#1a2e4f] dark:hover:bg-blue-500 shadow-sm transition-all cursor-pointer active:scale-95"
+                  disabled={isSubmitting}
+                  className="w-full py-2.5 rounded-xl bg-[#0f1f38] dark:bg-blue-600 text-white text-xs font-bold hover:bg-[#1a2e4f] dark:hover:bg-blue-500 shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-60"
                 >
-                  Sign in
+                  {isSubmitting ? "Authenticating..." : "Sign in"}
                 </button>
               </form>
 

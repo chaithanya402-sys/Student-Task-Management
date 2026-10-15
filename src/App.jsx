@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { StudyDeckProvider } from "./context/StudyDeckContext";
+import { StudyDeckProvider, useStudyDeck } from "./context/StudyDeckContext";
 
 // Student layout & pages
 import { AppLayout } from "./components/layout/AppLayout";
@@ -26,6 +26,28 @@ import { FacultySubmissionsPage } from "./pages/faculty/FacultySubmissionsPage";
 import { FacultyStudentsPage } from "./pages/faculty/FacultyStudentsPage";
 import { FacultyAnalyticsPage } from "./pages/faculty/FacultyAnalyticsPage";
 
+// Role-verified Protected Route Component
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { isAuthenticated, user } = useStudyDeck();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && allowedRoles.length > 0 && user && user.role) {
+    if (!allowedRoles.includes(user.role)) {
+      if (user.role === "student") {
+        return <Navigate to="/dashboard" replace />;
+      }
+      if (user.role === "faculty") {
+        return <Navigate to="/faculty/dashboard" replace />;
+      }
+    }
+  }
+
+  return children;
+};
+
 export default function App() {
   return (
     <StudyDeckProvider>
@@ -38,7 +60,13 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
 
           {/* Authenticated Student Portal Routes */}
-          <Route element={<AppLayout />}>
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["student", "chairman"]}>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/assignments" element={<AssignmentsPage />} />
@@ -50,7 +78,13 @@ export default function App() {
           </Route>
 
           {/* Authenticated Faculty Portal Routes */}
-          <Route element={<FacultyLayout />}>
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["faculty", "chairman"]}>
+                <FacultyLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route path="/faculty" element={<FacultyDashboardPage />} />
             <Route path="/faculty/dashboard" element={<FacultyDashboardPage />} />
             <Route path="/faculty/courses" element={<FacultyCoursesPage />} />

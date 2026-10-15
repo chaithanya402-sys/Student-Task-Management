@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { initDb, run, get, all } from "./db.js";
+import { initDb, run, get, all, hashPassword, generateSalt, generateToken, logActivity } from "./db.js";
 
 const app = express();
 const PORT = 5001;
@@ -16,17 +16,210 @@ await initDb();
 // -------------------------------------------------------------
 app.get("/api/auth/users", async (req, res) => {
   try {
-    const users = await all("SELECT id, name, email, role, department, initials, programme, year FROM users");
+    const users = await all("SELECT id, name, email, role, department, initials, programme, year, status FROM users");
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Register endpoint (Student self-registration & Faculty onboarding)
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { name, email, password, role = "student", department, programme, year, invite_code } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: "Full name is required" });
+    }
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ error: "A valid email address is required" });
+    }
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await get("SELECT id FROM users WHERE LOWER(email) = ?", [cleanEmail]);
+    if (existing) {
+      return res.status(409).json({ error: "An account with this email address already exists." });
+    }
+
+    // Role-specific onboarding rules
+    let status = "active";
+    let isPendingApproval = false;
+    const cleanRole = role.toLowerCase() === "faculty" ? "faculty" : "student";
+
+    if (cleanRole === "faculty") {
+      const validCodes = ["FACULTY2026", "STUDYFLOW_FACULTY", "ACADEMIC2026"];
+      if (invite_code && validCodes.includes(invite_code.trim().toUpperCase())) {
+        status = "active";
+      } else {
+        // Faculty without valid invite code requires administrator approval
+        status = "pending_approval";
+        isPendingApproval = true;
+      }
+    }
+
+    const salt = generateSalt();
+    const password_hash = hashPassword(password, salt);
+    const userId = `user-${cleanRole}-${Date.now()}`;
+    const initials = name
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
+
+    await run(
+      `INSERT INTO users (id, name, email, role, department, initials, programme, year, password_hash, salt, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        name.trim(),
+        cleanEmail,
+        cleanRole,
+        department || (cleanRole === "faculty" ? "Computer Science" : "Computer Science & Engineering"),
+        initials,
+        programme || (cleanRole === "faculty" ? "Faculty of Engineering" : "B.Tech"),
+        year || (cleanRole === "faculty" ? "Staff" : "1"),
+        password_hash,
+        salt,
+        status
+      ]
+    );
+
+    await logActivity(userId, isPendingApproval ? "REGISTER_PENDING" : "REGISTER", "user", userId, `User registered as ${cleanRole}`);
+
+    if (isPendingApproval) {
+      return res.status(201).json({
+        user: { id: userId, name: name.trim(), email: cleanEmail, role: cleanRole, status },
+        pendingApproval: true,
+        message: "Faculty account created! Awaiting administrator approval before you can sign in."
+      });
+    }
+
+    // Create session token for active user
+    const token = generateToken();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await run("INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)", [token, userId, now.toISOString(), expiresAt]);
+
+    const createdUser = await get(
+      "SELECT id, name, email, role, department, initials, programme, year, institution, status FROM users WHERE id = ?",
+      [userId]
+    );
+
+    res.status(201).json({
+      token,
+      user: createdUser,
+      message: "Registration successful! Welcome to StudyDeck."
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Login endpoint
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await get("SELECT * FROM users WHERE LOWER(email) = ?", [cleanEmail]);
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    // Verify password hash
+    const inputHash = hashPassword(password, user.salt);
+    if (inputHash !== user.password_hash) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    // Check approval status
+    if (user.status === "pending_approval") {
+      return res.status(403).json({
+        error: "Your faculty account is pending administrator approval. Please contact department admin."
+      });
+    }
+
+    // Create session token
+    const token = generateToken();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await run("INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)", [token, user.id, now.toISOString(), expiresAt]);
+
+    await logActivity(user.id, "LOGIN", "user", user.id, "User authenticated");
+
+    const safeUser = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      department: user.department,
+      initials: user.initials,
+      programme: user.programme,
+      year: user.year,
+      institution: user.institution,
+      status: user.status
+    };
+
+    res.json({
+      token,
+      user: safeUser,
+      message: "Sign in successful"
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Logout endpoint
+app.post("/api/auth/logout", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : req.body.token;
+    if (token) {
+      await run("DELETE FROM sessions WHERE token = ?", [token]);
+    }
+    res.json({ success: true, message: "Logged out successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Current user profile
 app.get("/api/auth/me", async (req, res) => {
   try {
-    const userId = req.query.userId || "user-student-alex";
-    const user = await get("SELECT * FROM users WHERE id = ?", [userId]);
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+    let user = null;
+    if (token) {
+      user = await get(
+        `SELECT u.id, u.name, u.email, u.role, u.department, u.initials, u.programme, u.year, u.institution, u.status
+         FROM sessions s
+         JOIN users u ON s.user_id = u.id
+         WHERE s.token = ? AND datetime(s.expires_at) > datetime('now')`,
+        [token]
+      );
+    }
+
+    if (!user) {
+      // Fallback for demo switching / tests with ?userId=
+      const userId = req.query.userId || "user-student-alex";
+      user = await get(
+        "SELECT id, name, email, role, department, initials, programme, year, institution, status FROM users WHERE id = ?",
+        [userId]
+      );
+    }
+
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json(user);
   } catch (err) {
@@ -424,10 +617,10 @@ app.get("/api/faculty/stats", async (req, res) => {
       [facultyId]
     );
 
-    const totalSubmissions = (totalSubsRow && totalSubsRow.total) || 312;
-    const awaitingGrading = (totalSubsRow && totalSubsRow.awaiting_grading) || 46;
-    const graded = (totalSubsRow && totalSubsRow.graded) || 266;
-    const overdue = 18; // Overdue items across active assignments
+    const totalSubmissions = totalSubsRow ? (totalSubsRow.total || 0) : 0;
+    const awaitingGrading = totalSubsRow ? (totalSubsRow.awaiting_grading || 0) : 0;
+    const graded = totalSubsRow ? (totalSubsRow.graded || 0) : 0;
+    const overdue = totalSubsRow ? (totalSubsRow.overdue_subs || 0) : 0;
 
     // 5. Course progress breakdown
     const courseProgress = [];
@@ -443,8 +636,8 @@ app.get("/api/faculty/stats", async (req, res) => {
       courseProgress.push({
         code: c.code,
         name: c.name,
-        enrolled: enr.count || 40,
-        submitted: sub.count || 34
+        enrolled: enr ? enr.count : 0,
+        submitted: sub ? sub.count : 0
       });
     }
 
@@ -461,31 +654,46 @@ app.get("/api/faculty/stats", async (req, res) => {
       [facultyId]
     );
 
-    // 7. Suggested Check-ins (Students with multiple late/overdue items)
+    // 7. Dynamic Score distribution from graded submissions
+    const scoreBands = await all(
+      `SELECT 
+        SUM(CASE WHEN s.marks >= 0 AND s.marks < 40 THEN 1 ELSE 0 END) as band_0_39,
+        SUM(CASE WHEN s.marks >= 40 AND s.marks < 60 THEN 1 ELSE 0 END) as band_40_59,
+        SUM(CASE WHEN s.marks >= 60 AND s.marks < 80 THEN 1 ELSE 0 END) as band_60_79,
+        SUM(CASE WHEN s.marks >= 80 THEN 1 ELSE 0 END) as band_80_100
+       FROM submissions s
+       JOIN assignments a ON s.assignment_id = a.id
+       WHERE a.faculty_id = ? AND s.status = 'graded' AND s.marks IS NOT NULL`,
+      [facultyId]
+    );
+    const bandData = (scoreBands && scoreBands[0]) || {};
+    const scoreDistribution = [
+      { band: "0–39", count: bandData.band_0_39 || 0 },
+      { band: "40–59", count: bandData.band_40_59 || 0 },
+      { band: "60–79", count: bandData.band_60_79 || 0 },
+      { band: "80–100", count: bandData.band_80_100 || 0 }
+    ];
+
+    // 8. Suggested Check-ins (Students with late/overdue submissions)
     const suggestedCheckIns = [
-      { id: "user-student-kiran", name: "Kiran Das", initials: "KD", reason: "4 overdue items, mostly CS204" },
-      { id: "user-student-meera", name: "Meera Joshi", initials: "MJ", reason: "3 overdue items, CS101 and CS310" },
-      { id: "user-student-arjun", name: "Arjun Menon", initials: "AM", reason: "3 overdue items, CS101" }
+      { id: "user-student-kiran", name: "Kiran Das", initials: "KD", reason: "Overdue items in CS204" },
+      { id: "user-student-meera", name: "Meera Joshi", initials: "MJ", reason: "Overdue items in CS101 and CS310" },
+      { id: "user-student-arjun", name: "Arjun Menon", initials: "AM", reason: "Overdue items in CS101" }
     ];
 
     res.json({
       assignedCourses: courses.length,
-      enrolledStudents: totalEnrolled || 128,
-      activeAssignments: activeAssignments || 7,
+      enrolledStudents: totalEnrolled,
+      activeAssignments: activeAssignments,
       totalSubmissions: totalSubmissions,
       awaitingGrading: awaitingGrading,
       gradedCount: graded,
-      gradedPercentage: Math.round((graded / (totalSubmissions || 1)) * 100),
+      gradedPercentage: totalSubmissions > 0 ? Math.round((graded / totalSubmissions) * 100) : 0,
       overdueCount: overdue,
       courseProgress,
       recentSubmissions,
       suggestedCheckIns,
-      scoreDistribution: [
-        { band: "0–39", count: 4 },
-        { band: "40–59", count: 18 },
-        { band: "60–79", count: 52 },
-        { band: "80–100", count: 39 }
-      ]
+      scoreDistribution
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -520,16 +728,23 @@ app.get("/api/student/stats", async (req, res) => {
       [studentId]
     );
 
+    const totalTasks = totalTasksRow ? totalTasksRow.count : 0;
+    const pendingTasks = pendingTasksRow ? pendingTasksRow.count : 0;
+    const completedTasks = completedTasksRow ? completedTasksRow.count : 0;
+    const overdueTasks = overdueTasksRow ? overdueTasksRow.count : 0;
+    const totalAssignments = enrAsgRow ? (enrAsgRow.total || 0) : 0;
+    const submittedAssignments = enrAsgRow ? (enrAsgRow.submitted || 0) : 0;
     const averageGrade = gradesRow && gradesRow.avg_marks ? Number(gradesRow.avg_marks.toFixed(1)) : 84.7;
 
     res.json({
-      totalTasks: totalTasksRow ? totalTasksRow.count : 40,
-      pendingTasks: pendingTasksRow ? pendingTasksRow.count : 12,
-      completedTasks: completedTasksRow ? completedTasksRow.count : 24,
-      overdueTasks: overdueTasksRow ? overdueTasksRow.count : 4,
-      totalAssignments: enrAsgRow ? enrAsgRow.total : 20,
-      submittedAssignments: enrAsgRow ? enrAsgRow.submitted : 17,
-      assignmentCompletionRate: enrAsgRow && enrAsgRow.total > 0 ? Math.round((enrAsgRow.submitted / enrAsgRow.total) * 100) : 85,
+      totalTasks,
+      pendingTasks,
+      completedTasks,
+      overdueTasks,
+      taskCompletionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+      totalAssignments,
+      submittedAssignments,
+      assignmentCompletionRate: totalAssignments > 0 ? Math.round((submittedAssignments / totalAssignments) * 100) : 0,
       averageGrade,
       onTimeRate: 78
     });
@@ -593,6 +808,171 @@ app.post("/api/students/check-in", async (req, res) => {
     );
 
     res.json({ success: true, message: "Check-in message delivered to student" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
+// 9. STUDENT TASKS CRUD ENDPOINTS (Persistent SQLite)
+// -------------------------------------------------------------
+app.get("/api/tasks", async (req, res) => {
+  try {
+    const userId = req.query.userId || "user-student-alex";
+    const tasks = await all(
+      "SELECT * FROM student_tasks WHERE student_id = ? ORDER BY due_date ASC",
+      [userId]
+    );
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/tasks", async (req, res) => {
+  try {
+    const { student_id, assignment_id, title, course_code, due_date, status, priority, is_assigned, description } = req.body;
+
+    if (!student_id || !title || !due_date) {
+      return res.status(400).json({ error: "Missing required task fields (student_id, title, due_date)" });
+    }
+
+    const id = `task-${Date.now()}`;
+    await run(
+      `INSERT INTO student_tasks (id, student_id, assignment_id, title, course_code, due_date, status, priority, is_assigned, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        student_id,
+        assignment_id || null,
+        title,
+        course_code || "General",
+        due_date,
+        status || "pending",
+        priority || "medium",
+        is_assigned ? 1 : 0,
+        description || ""
+      ]
+    );
+
+    await logActivity(student_id, "CREATE_TASK", "task", id, `Created task: ${title}`);
+    const created = await get("SELECT * FROM student_tasks WHERE id = ?", [id]);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/tasks/:id", async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const { title, course_code, due_date, status, priority, description } = req.body;
+
+    const existing = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
+    if (!existing) return res.status(404).json({ error: "Task not found" });
+
+    await run(
+      `UPDATE student_tasks
+       SET title = COALESCE(?, title),
+           course_code = COALESCE(?, course_code),
+           due_date = COALESCE(?, due_date),
+           status = COALESCE(?, status),
+           priority = COALESCE(?, priority),
+           description = COALESCE(?, description)
+       WHERE id = ?`,
+      [title, course_code, due_date, status, priority, description, taskId]
+    );
+
+    await logActivity(existing.student_id, "UPDATE_TASK", "task", taskId, `Updated task ${taskId} status to ${status || existing.status}`);
+    const updated = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/tasks/:id", async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const existing = await get("SELECT * FROM student_tasks WHERE id = ?", [taskId]);
+    if (!existing) return res.status(404).json({ error: "Task not found" });
+
+    await run("DELETE FROM student_tasks WHERE id = ?", [taskId]);
+    await logActivity(existing.student_id, "DELETE_TASK", "task", taskId, `Deleted task: ${existing.title}`);
+    res.json({ success: true, message: "Task deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
+// 10. REPORTS & EXPORTS ENDPOINTS
+// -------------------------------------------------------------
+app.get("/api/faculty/export/submissions", async (req, res) => {
+  try {
+    const facultyId = req.query.facultyId || "user-faculty-rao";
+    const submissions = await all(
+      `SELECT s.id, u.name as student_name, u.email as student_email, c.code as course_code,
+              a.title as assignment_title, a.max_points, s.submitted_at, s.status, s.marks, s.feedback
+       FROM submissions s
+       JOIN assignments a ON s.assignment_id = a.id
+       JOIN courses c ON a.course_id = c.id
+       JOIN users u ON s.student_id = u.id
+       WHERE a.faculty_id = ?
+       ORDER BY s.submitted_at DESC`,
+      [facultyId]
+    );
+
+    const headers = "Submission ID,Student Name,Email,Course,Assignment,Submitted At,Status,Marks,Max Points,Feedback\n";
+    const rows = submissions
+      .map((s) => {
+        const cleanFeedback = (s.feedback || "").replace(/"/g, '""');
+        return `"${s.id}","${s.student_name}","${s.student_email}","${s.course_code}","${s.assignment_title}","${s.submitted_at}","${s.status}",${s.marks !== null ? s.marks : '""'},${s.max_points},"${cleanFeedback}"`;
+      })
+      .join("\n");
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", 'attachment; filename="faculty_submissions_report.csv"');
+    res.send(headers + rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/student/export/tasks", async (req, res) => {
+  try {
+    const studentId = req.query.studentId || "user-student-alex";
+    const tasks = await all("SELECT * FROM student_tasks WHERE student_id = ? ORDER BY due_date ASC", [studentId]);
+
+    const headers = "Task ID,Title,Course,Due Date,Status,Priority,Assigned By Faculty,Description\n";
+    const rows = tasks
+      .map((t) => {
+        const cleanDesc = (t.description || "").replace(/"/g, '""');
+        return `"${t.id}","${t.title}","${t.course_code || 'General'}","${t.due_date}","${t.status}","${t.priority}",${t.is_assigned ? 'Yes' : 'No'},"${cleanDesc}"`;
+      })
+      .join("\n");
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", 'attachment; filename="student_tasks_report.csv"');
+    res.send(headers + rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
+// 11. ACTIVITY LOGS ENDPOINT
+// -------------------------------------------------------------
+app.get("/api/activity-logs", async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    let logs;
+    if (userId) {
+      logs = await all("SELECT * FROM activity_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 50", [userId]);
+    } else {
+      logs = await all("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 50");
+    }
+    res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

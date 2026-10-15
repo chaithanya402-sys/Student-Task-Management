@@ -13,7 +13,8 @@ import {
   ArrowRight,
   Sparkles,
   Calendar,
-  X
+  X,
+  Download
 } from "lucide-react";
 import { useStudyDeck } from "../context/StudyDeckContext";
 import { Card } from "../components/common/Card";
@@ -24,6 +25,7 @@ export const TasksPage = () => {
   const {
     tasks,
     stats,
+    currentUserId,
     toggleTaskStatus,
     updateTask,
     deleteTask,
@@ -243,6 +245,16 @@ export const TasksPage = () => {
               <option value="medium">Medium Priority</option>
               <option value="low">Low Priority</option>
             </select>
+
+            <a
+              href={`/api/student/export/tasks?studentId=${currentUserId}`}
+              download="student_tasks_report.csv"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-2xs"
+              title="Export tasks to CSV"
+            >
+              <Download size={14} />
+              <span className="hidden sm:inline">Export CSV</span>
+            </a>
 
             <button
               onClick={() => {

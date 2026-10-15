@@ -2,6 +2,7 @@ import sqlite3 from "sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import crypto from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,33 @@ export const all = (sql, params = []) => {
   });
 };
 
+// Password hashing & security helpers
+export const hashPassword = (password, salt) => {
+  return crypto.scryptSync(password, salt, 64).toString("hex");
+};
+
+export const generateSalt = () => {
+  return crypto.randomBytes(16).toString("hex");
+};
+
+export const generateToken = () => {
+  return crypto.randomBytes(32).toString("hex");
+};
+
+export const logActivity = async (userId, action, entityType, entityId = null, details = "") => {
+  try {
+    const id = `act-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const createdAt = new Date().toISOString().replace("T", " ").slice(0, 19);
+    await run(
+      `INSERT INTO activity_logs (id, user_id, action, entity_type, entity_id, details, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, action, entityType, entityId, details, createdAt]
+    );
+  } catch (err) {
+    console.warn("Failed to log activity:", err.message);
+  }
+};
+
 export const initDb = async () => {
   // Enable foreign keys
   await run("PRAGMA foreign_keys = ON;");
@@ -52,7 +80,48 @@ export const initDb = async () => {
       initials TEXT NOT NULL,
       programme TEXT,
       year TEXT,
-      institution TEXT DEFAULT 'Apex Institute of Technology'
+      institution TEXT DEFAULT 'Apex Institute of Technology',
+      password_hash TEXT,
+      salt TEXT,
+      status TEXT DEFAULT 'active' -- 'active', 'pending_approval'
+    );
+  `);
+
+  // Migrate users table columns if missing
+  const userCols = await all("PRAGMA table_info(users)");
+  const colNames = userCols.map(c => c.name);
+  if (!colNames.includes("password_hash")) {
+    await run("ALTER TABLE users ADD COLUMN password_hash TEXT;");
+  }
+  if (!colNames.includes("salt")) {
+    await run("ALTER TABLE users ADD COLUMN salt TEXT;");
+  }
+  if (!colNames.includes("status")) {
+    await run("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';");
+  }
+
+  // Sessions table for authenticated token management
+  await run(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+  `);
+
+  // Activity logs table
+  await run(`
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT,
+      details TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `);
 
@@ -161,6 +230,36 @@ export const initDb = async () => {
     console.log("Seeding initial database...");
     await seedDatabase();
     console.log("Database seeded successfully.");
+  }
+
+  // Ensure default password hashes for users with missing password_hash
+  const unhashedUsers = await all("SELECT id, email, role FROM users WHERE password_hash IS NULL");
+  for (const u of unhashedUsers) {
+    const salt = generateSalt();
+    let defaultPass = "student123";
+    if (u.role === "faculty") defaultPass = "faculty2026";
+    else if (u.email === "alex.kumar@college.edu") defaultPass = "studydeck2026";
+    else if (u.role === "chairman") defaultPass = "chairman2026";
+    const hash = hashPassword(defaultPass, salt);
+    await run("UPDATE users SET password_hash = ?, salt = ?, status = 'active' WHERE id = ?", [hash, salt, u.id]);
+  }
+
+  // Ensure Chancellor / Admin user exists
+  const chancellor = await get("SELECT id FROM users WHERE email = 'admin.chancellor@college.edu'");
+  if (!chancellor) {
+    const salt = generateSalt();
+    const hash = hashPassword("chairman2026", salt);
+    await run(
+      `INSERT INTO users (id, name, email, role, department, initials, programme, year, password_hash, salt, status)
+       VALUES ('user-admin-chancellor', 'Admin Chancellor', 'admin.chancellor@college.edu', 'chairman', 'Academic Administration', 'AC', 'Administration', 'Staff', ?, ?, 'active')`,
+      [hash, salt]
+    );
+  }
+
+  // Ensure full 40 student tasks for Alex Kumar if fewer than 10 exist
+  const alexTaskCount = await get("SELECT COUNT(*) as count FROM student_tasks WHERE student_id = 'user-student-alex'");
+  if (alexTaskCount.count < 10) {
+    await seedAllAlexTasks();
   }
 };
 
@@ -311,6 +410,64 @@ const seedDatabase = async () => {
       ('notif-alex-1', 'user-student-alex', 'Problem Set 7 has been graded', 'Dr. S. Rao published your score: 88/100 with feedback.', 'CS204', 'CS204 · scored 88%', 'Feedback', 'feedback', '/assignments', 0, '2026-10-13 09:30'),
       ('notif-alex-2', 'user-student-alex', 'New Assignment: Problem Set 8', 'Published by Dr. S. Rao. Due 18 Oct 2026.', 'CS204', 'CS204 · due 18 Oct', 'Reminders', 'reminder', '/assignments', 0, '2026-10-08 10:00');
   `);
+};
+
+export const seedAllAlexTasks = async () => {
+  const fullTasks = [
+    // 4 Overdue tasks
+    { id: "task-1", title: "Poetry Analysis Final Draft", course: "English Lit", dueDate: "2026-10-12", status: "overdue", priority: "high", isAssigned: 1, description: "Complete and format final draft of Romantic poetry essay." },
+    { id: "task-2", title: "Review Biology Week 4 Slides", course: "Biology 101", dueDate: "2026-10-11", status: "overdue", priority: "medium", isAssigned: 0, description: "Go over organelle slides and self-test questions." },
+    { id: "task-3", title: "Arithmetic Practice Problem Set 6", course: "Arithmetic 2", dueDate: "2026-10-10", status: "overdue", priority: "high", isAssigned: 1, description: "Finish remaining exercises on algebraic systems." },
+    { id: "task-4", title: "Library Book Return & History Readings", course: "History 201", dueDate: "2026-10-09", status: "overdue", priority: "low", isAssigned: 0, description: "Return reserve books and photocopy Industrial Revolution chapter." },
+
+    // 12 Pending tasks (5 due within 7 days: Oct 15 - Oct 21)
+    { id: "task-5", title: "Complete Cell Structure Lab Report", course: "Biology 101", dueDate: "2026-10-17", status: "pending", priority: "high", isAssigned: 1, description: "Compile microscope measurements and write conclusion." },
+    { id: "task-6", title: "Solve Problem Set 7.c Exercises", course: "Arithmetic 2", dueDate: "2026-10-18", status: "pending", priority: "high", isAssigned: 1, description: "Draft solutions for problems 1 to 15." },
+    { id: "task-7", title: "Revise Industrial Revolution Essay", course: "History 201", dueDate: "2026-10-20", status: "pending", priority: "high", isAssigned: 1, description: "Address instructor feedback regarding secondary sources." },
+    { id: "task-8", title: "Read Chapter 5: Enzyme Kinetics", course: "Biology 101", dueDate: "2026-10-16", status: "pending", priority: "medium", isAssigned: 0, description: "Highlight key concepts on competitive inhibition." },
+    { id: "task-9", title: "Set Up Chemistry Lab Notebook", course: "Chemistry 101", dueDate: "2026-10-19", status: "pending", priority: "medium", isAssigned: 0, description: "Pre-lab writeup for titration experiment." },
+    { id: "task-10", title: "Chemistry Titration Worksheet", course: "Chemistry 101", dueDate: "2026-10-22", status: "pending", priority: "medium", isAssigned: 1, description: "Complete pre-lab calculations and titration curves." },
+    { id: "task-11", title: "Arithmetic Quiz Prep Set", course: "Arithmetic 2", dueDate: "2026-10-24", status: "pending", priority: "medium", isAssigned: 1, description: "Work through practice quiz set for exam 2." },
+    { id: "task-12", title: "Draft Outline for Midterm Project", course: "CS101", dueDate: "2026-10-26", status: "pending", priority: "high", isAssigned: 0, description: "Outline system architecture and UI components." },
+    { id: "task-13", title: "Review English Lit Discussion Prompts", course: "English Lit", dueDate: "2026-10-28", status: "pending", priority: "low", isAssigned: 0, description: "Prepare talking points for seminar discussion." },
+    { id: "task-14", title: "Read History 201 Primary Sources", course: "History 201", dueDate: "2026-10-29", status: "pending", priority: "medium", isAssigned: 0, description: "Examine parliamentary testimony excerpts." },
+    { id: "task-15", title: "Organize Digital Study Notes", course: "General", dueDate: "2026-10-30", status: "pending", priority: "low", isAssigned: 0, description: "Consolidate week 1-6 lecture summaries into folder." },
+    { id: "task-16", title: "Schedule Peer Study Group", course: "Arithmetic 2", dueDate: "2026-10-31", status: "pending", priority: "low", isAssigned: 0, description: "Book study room in central library for group revision." },
+
+    // 24 Completed tasks
+    { id: "task-17", title: "Genetics Problem Set", course: "Biology 101", dueDate: "2026-10-05", status: "completed", priority: "high", isAssigned: 1, description: "Pedigree charts and Punnett squares." },
+    { id: "task-18", title: "Renaissance Art Presentation", course: "History 201", dueDate: "2026-09-28", status: "completed", priority: "medium", isAssigned: 1, description: "Slide deck on Florentine humanism." },
+    { id: "task-19", title: "Photosynthesis Experiment Log", course: "Biology 101", dueDate: "2026-09-20", status: "completed", priority: "high", isAssigned: 1, description: "Spectrophotometer readings." },
+    { id: "task-20", title: "Linear Systems Diagnostic", course: "Arithmetic 2", dueDate: "2026-09-15", status: "completed", priority: "high", isAssigned: 1, description: "Solving 3-variable systems." },
+    { id: "task-21", title: "Hamlet Close Reading", course: "English Lit", dueDate: "2026-09-10", status: "completed", priority: "medium", isAssigned: 1, description: "Commentary on Act 3 Scene 1." },
+    { id: "task-22", title: "Periodic Trends Data Sheet", course: "Chemistry 101", dueDate: "2026-09-05", status: "completed", priority: "medium", isAssigned: 1, description: "Atomic radii and electronegativity." },
+    { id: "task-23", title: "Mitosis Sketchbook", course: "Biology 101", dueDate: "2026-08-30", status: "completed", priority: "medium", isAssigned: 0, description: "Root tip cell phase sketches." },
+    { id: "task-24", title: "Vector Geometry Assignment", course: "Arithmetic 2", dueDate: "2026-08-25", status: "completed", priority: "high", isAssigned: 0, description: "Cross products and 3D planes." },
+    { id: "task-25", title: "Enlightenment Matrix", course: "History 201", dueDate: "2026-08-20", status: "completed", priority: "medium", isAssigned: 0, description: "Philosophes comparison matrix." },
+    { id: "task-26", title: "Victorian Era Poetry Comparison", course: "English Lit", dueDate: "2026-08-15", status: "completed", priority: "low", isAssigned: 0, description: "Tennyson vs Browning analysis." },
+    { id: "task-27", title: "Stoichiometry Practice Set", course: "Chemistry 101", dueDate: "2026-08-10", status: "completed", priority: "high", isAssigned: 0, description: "Limiting reagent calculations." },
+    { id: "task-28", title: "Cellular Respiration Quiz Review", course: "Biology 101", dueDate: "2026-08-05", status: "completed", priority: "medium", isAssigned: 0, description: "Krebs cycle pathway review." },
+    { id: "task-29", title: "Trigonometric Identities Worksheet", course: "Arithmetic 2", dueDate: "2026-08-01", status: "completed", priority: "medium", isAssigned: 0, description: "Double-angle formulas." },
+    { id: "task-30", title: "Feudal Systems Analysis", course: "History 201", dueDate: "2026-07-25", status: "completed", priority: "medium", isAssigned: 0, description: "Manorialism economics." },
+    { id: "task-31", title: "Syllabus Review and Course Registration", course: "General", dueDate: "2026-07-20", status: "completed", priority: "low", isAssigned: 0, description: "Register for semester modules." },
+    { id: "task-32", title: "Campus ID Card Renewal", course: "General", dueDate: "2026-07-18", status: "completed", priority: "low", isAssigned: 0, description: "Student services check-in." },
+    { id: "task-33", title: "Download Textbook PDF Chapters", course: "Biology 101", dueDate: "2026-07-15", status: "completed", priority: "low", isAssigned: 0, description: "Download required readings." },
+    { id: "task-34", title: "Calculator Battery Replacement", course: "Arithmetic 2", dueDate: "2026-07-12", status: "completed", priority: "low", isAssigned: 0, description: "Scientific calculator readiness." },
+    { id: "task-35", title: "Set Up Lab Safety Goggles", course: "Chemistry 101", dueDate: "2026-07-10", status: "completed", priority: "low", isAssigned: 0, description: "Verify chemistry lab PPE kit." },
+    { id: "task-36", title: "Join Discord Study Group", course: "General", dueDate: "2026-07-08", status: "completed", priority: "low", isAssigned: 0, description: "Coordinate with course peers." },
+    { id: "task-37", title: "Install Graphing Software", course: "Arithmetic 2", dueDate: "2026-07-05", status: "completed", priority: "low", isAssigned: 0, description: "Setup plotting utility." },
+    { id: "task-38", title: "History Timeline Flashcards", course: "History 201", dueDate: "2026-07-03", status: "completed", priority: "medium", isAssigned: 0, description: "Chronological flashcards." },
+    { id: "task-39", title: "Grammar & Citation Handbook Reading", course: "English Lit", dueDate: "2026-07-02", status: "completed", priority: "low", isAssigned: 0, description: "MLA citation format guide." },
+    { id: "task-40", title: "Semester Goal Setting Sheet", course: "General", dueDate: "2026-07-01", status: "completed", priority: "low", isAssigned: 0, description: "Set GPA and target milestones." }
+  ];
+
+  for (const t of fullTasks) {
+    await run(
+      `INSERT OR IGNORE INTO student_tasks (id, student_id, assignment_id, title, course_code, due_date, status, priority, is_assigned, description)
+       VALUES (?, 'user-student-alex', NULL, ?, ?, ?, ?, ?, ?, ?)`,
+      [t.id, t.title, t.course, t.dueDate, t.status, t.priority, t.isAssigned, t.description]
+    );
+  }
 };
 
 export default db;
